@@ -1,0 +1,3 @@
+1. preprocess the cityscapes dataset, make sure no city splits and mask, frame maintain the same file names correspodingly
+2. 20 class --- 0-19 19 unlabled
+3. save to --- color --- ground truth and prediction save at the same time

@@ -42,7 +42,7 @@ test_mask_path = os.path.join(args.dataset_path, folder[2])
 test_frame_path =  os.path.join(args.dataset_path, folder[3])
 
 
-NO_OF_TRAINING_IMAGES = int(0.7*len(os.listdir(train_mask_path)))
+NO_OF_TRAINING_IMAGES = int(0.8*len(os.listdir(train_mask_path)))
 NO_OF_VAL_IMAGES = len(os.listdir(train_mask_path)) - NO_OF_TRAINING_IMAGES
 print(NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES)
 
@@ -72,11 +72,19 @@ history = m.fit_generator(train_gen, epochs=args.epochs,
                           callbacks=callbacks)
 
 
+#prediction
+
 test_x, test_y = load_test(test_frame_path, test_mask_path)
-results = m.predict(test_x)
+score = m.evaluate(test_x, test_y, verbose=0)
+print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
+
+predict_y = m.predict(test_x)
 
 #save image
-save_result(args.results_path, results, test_x, test_y)
+if not os.path.isdir(args.result_path):
+    os.makedirs(args.result_path)
+    
+save_results(test_mask_path, args.result_path, test_x, test_y, predict_y)
 
 
 
