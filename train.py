@@ -5,7 +5,7 @@ from segmentation_models.metrics import iou_score
 from keras.callbacks import TensorBoard
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
-
+from dataGenerator import *
 
 def get_callbacks(name_weights, path, patience_lr):
     mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
@@ -22,7 +22,7 @@ from dataGenerator import *
 
 #get arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes')
+parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/')
 parser.add_argument("--ckpt_path", type=str, default='./models/')
 parser.add_argument("--results_path", type=str, default='')
 parser.add_argument("--batch_size", type=int, default=64)
@@ -30,24 +30,17 @@ parser.add_argument("--epochs", type=int, default=100)
 args = parser.parse_args()
 
 BATCH_SIZE = args.batch_size
+frame_path = os.path.join(args.dataset_path,'leftImg8bit')
+mask_path = os.path.join(args.dataset_path,'gtFine')
 
 if not os.path.isdir(args.ckpt_path):
     os.makedirs(args.ckpt_path)
-
-#data path
-folder = ['trainB','trainA', 'testB', 'testA']
-train_mask_path = os.path.join(args.dataset_path, folder[0])
-train_frame_path = os.path.join(args.dataset_path, folder[1])
-test_mask_path = os.path.join(args.dataset_path, folder[2])
-test_frame_path =  os.path.join(args.dataset_path, folder[3])
-
-
-NO_OF_TRAINING_IMAGES = int(0.8*len(os.listdir(train_mask_path)))
-NO_OF_VAL_IMAGES = len(os.listdir(train_mask_path)) - NO_OF_TRAINING_IMAGES
+    
+train_x, train_y, val_x, val_y, test_x, test_y = load_data(frame_path, mask_path)
+NO_OF_TRAINING_IMAGES = train_x[0]
+NO_OF_VAL_IMAGES = val_x[0]
 print(NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES)
 
-# load your data
-train_x, train_y, val_x, val_y = load_trainval(train_mask_path, train_frame_path, BATCH_SIZE)
 train_gen, val_gen = dataGen(train_x, train_y, val_x, val_y, BATCH_SIZE)
 
 # define model
@@ -74,7 +67,6 @@ history = m.fit_generator(train_gen, epochs=args.epochs,
 
 #prediction
 
-test_x, test_y = load_test(test_frame_path, test_mask_path)
 score = m.evaluate(test_x, test_y, verbose=0)
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 

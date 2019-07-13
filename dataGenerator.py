@@ -4,12 +4,19 @@ import scipy.misc
 from PIL import Image
 import os
 import sys
-from sklearn.preprocessing import OneHotEncoder
+import re
+import glob
 
 # import label
 labels = __import__('labels')
 id2trainId = {label.id: label.trainId for label in labels.labels}  # dictionary mapping from raw IDs to train IDs
 trainId2color = {label.trainId: label.color for label in labels.labels}  # dictionary mapping train IDs to colors as 3-tuples
+
+# def indices_to_one_hot(data, nb_classes):
+#     """Convert an iterable of indices to one-hot encoded labels."""
+#     targets = np.array(data).reshape(-1)
+#     print(targets.shape)
+#     return np.eye(nb_classes)[targets]
 
 def dataGen(train_x, train_y, val_x, val_y, batch_size):
     
@@ -31,8 +38,12 @@ def dataGen(train_x, train_y, val_x, val_y, batch_size):
                          rotation_range = 10,
                          featurewise_center=True,
                         )
+
     img_datagen = ImageDataGenerator(**data_gen_args)
     mask_datagen = ImageDataGenerator(**data_gen_args)
+    
+    img_datagen.fit(train_x)
+    mask_datagen.fit(train_y)
 
     seed = 2018
     img_gen = img_datagen.flow(train_x, seed = seed, batch_size=batch_size, shuffle=True)#shuffling
@@ -42,7 +53,10 @@ def dataGen(train_x, train_y, val_x, val_y, batch_size):
 # val_gen
     img_datagen = ImageDataGenerator()
     mask_datagen = ImageDataGenerator()
-            
+    
+    img_datagen.fit(val_x)
+    mask_datagen.fit(val_y)
+    
     img_gen = img_datagen.flow(val_x, batch_size=batch_size, shuffle=True)
     mask_gen = mask_datagen.flow(val_y, batch_size=batch_size, shuffle=True)
     val_gen = zip(img_gen, mask_gen)    
@@ -57,10 +71,10 @@ def palette(label):
         label= label[0]
     color = np.empty((256, 256, 3))
     if sys.version_info[0] < 3:
-        for k, v in self.trainId2color.iteritems():
+        for k, v in trainId2color.iteritems():
             color[label == k, :] = v
     else:
-        for k, v in self.trainId2color.items():
+        for k, v in trainId2color.items():
             color[label == k, :] = v
     return color
 
@@ -72,10 +86,10 @@ def assign_trainIds(label):
     """
     label = np.array(label, dtype=np.float32)
     if sys.version_info[0] < 3:
-        for k, v in self.id2trainId.iteritems():
+        for k, v in id2trainId.iteritems():
             label[label == k] = v
     else:
-        for k, v in self.id2trainId.items():
+        for k, v in id2trainId.items():
             label[label == k] = v
     return label
 
@@ -84,8 +98,8 @@ def imgId2trainId(labelId, shape = 256):
     for a in range(shape):
         for b in range(shape):
             labelId[a,b] = assign_trainIds(labelId[a,b])
-    trainId = np.where(labelId = 255, 19, labelId)
-    trainId = np.where(labelId = -1, 19, labelId) # unlabeled
+    trainId = np.where(labelId == -1, 19, labelId) # unlabeled
+    trainId = np.where(labelId == 255, 19, labelId)
     return trainId
 
 
@@ -96,78 +110,69 @@ def imgTrain2color(trainId, shape = 256):
             colorimg[a,b] = palette(trainId[a,b])
     return colorimg
 
-
-def load_trainval(train_mask_path, train_frame_path, shape=256, cl=20):
+def xy_array(mask_path, frame_path, save_path, split, shape=256, cl=20):
+    mask_path = os.path.join(mask_path, split)
+    frame_path = os.path.join(frame_path, split)
+    
+    mask_files = [f for f in glob.glob(mask_path + "/**/*_labelIds.png", recursive=True)]
+    frame_files = [f for f in glob.glob(frame_path + "/**/*.png", recursive=True)]
+    
+    #sort
+    frame_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                               for x in re.findall(r'[^0-9]|[0-9]+', var)])
+    mask_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                               for x in re.findall(r'[^0-9]|[0-9]+', var)])
+    
+    
     # binary encode
-    onehot_encoder = OneHotEncoder(sparse=False)
-#     onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
     
-    files = os.listdir(train_mask_path)
-    train_split = int(0.8*len(files))
-    train_files = files[:train_split]
-    val_files = files[train_split:]
+    num_files = len(mask_files)
+    print(len(mask_files), len(frame_files))
     
+#     x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
+#     y = np.zeros((num_files, shape, shape, cl)).astype(np.int8)
+    
+    
+    
+    for i in range(num_files):
+        print(i)
+        im = np.array(Image.open(os.path.join(mask_path, mask_files[i])))
+        labelId = scipy.misc.imresize(im, (shape,shape),interp='nearest')
+        trainId = imgId2trainId(labelId)
+        #np.save(outfile, x)
+        print(save_path)
+        outfile = os.path.join(save_path, split, 'mask', mask_files[i][:-12]+'trainIds.npy')
+        #, 'mask', mask_files[i][:-12]+'trainIds.npy'
+        print(outfile)
+        np.save(outfile, trainId)
+#         mask = np.eye(cl)[trainId]
+        im = np.array(Image.open(os.path.join(frame_path, frame_files[i])))
+        frame = scipy.misc.imresize(im, (shape, shape))
+        outfile = os.path.join(save_path, split, 'frame', frame_files[i][:-3]+'npy')
+        np.save(outfile, frame)
+        
+#         x[i] = frame
+#         y[i] = mask
+                      
+#     return x, y
+                 
+
+def load_data(frame_path, mask_path, shape=256, cl=20):
+    save_path = '/home/yifan/Github/segmentation_train/dataset/cityscapes'
     #training set
-    train_x = np.zeros((len(train_files), shape, shape, 3)).astype(np.float32)
-    train_y = np.zeros((len(train_files), shape, shape, cl)).astype(np.int8)
-    
-    for i in range(len(train_files)): 
-        im = np.array(Image.open(os.path.join(train_mask_path, train_files[i])))
-        labelId = scipy.misc.imresize(im, (shape, shape),interp='nearest')
-        print(labelId[0,0])
-        trainId = imgId2trainId(labelId)
-        mask = onehot_encoder.fit_transform(trainId)
-        
-        im = np.array(Image.open(os.path.join(train_frame_path, train_files[i])))
-        frame = scipy.misc.imresize(im, (shape, shape))
-        
-        train_x[i] = frame
-        train_y[i] = mask
-        
-    #validation set
-    val_x = np.zeros((len(val_files), shape, shape, 3)).astype(np.float32)
-    val_y = np.zeros((len(val_files), shape, shape, cl)).astype(np.int8)
+    train_x, train_y = xy_array(mask_path, frame_path, save_path, 'train')
+    val_x, val_y = xy_array(val_mask_path, val_frame_path,save_path, 'val')
+    test_x, test_y = xy_array(test_mask_path, test_frame_path,save_path, 'test')
 
-    for i in range(len(val_files)): 
-        im = np.array(Image.open(os.path.join(train_mask_path, val_files[i])))
-        labelId = scipy.misc.imresize(im, (shape, shape),interp='nearest')
-        trainId = imgId2trainId(labelId)
-        mask = onehot_encoder.fit_transform(trainId)
-        
-        im = np.array(Image.open(os.path.join(train_frame_path, val_files[i])))
-        frame = scipy.misc.imresize(im, (shape, shape))
-        
-        val_x[i] = frame
-        val_y[i] = mask
-        
-    return train_x, train_y, val_x, val_y
-
-def load_test(test_mask_path, test_frame_path, shape=256, cl=20):
-    
-    files = os.listdir(test_mask_path)
-    test_x = np.zeros((len(files), shape, shape, 3)).astype(np.float32)
-    test_y = np.zeros((len(files), shape, shape, cl)).astype(np.int8)
-    
-    for i in range(len(files)): 
-        im = np.array(Image.open(os.path.join(test_mask_path,files[i])))
-        labelId = scipy.misc.imresize(im, (shape, shape))
-        trainId = imgId2trainId(labelId)
-        mask = onehot_encoder.fit_transform(trainId)
-        
-        im = np.array(Image.open(os.path.join(test_frame_path,files[i])))
-        frame = scipy.misc.imresize(im, (shape, shape))
-        
-        val_x[i] = frame
-        val_y[i] = mask
-    return test_x, test_y
+    return train_x, train_y, val_x, val_y, test_x, test_y 
 
         
 def save_results(test_mask_path, result_dir, test_x, test_y, predict_y):
     files = os.listdir(test_mask_path) # maintains the filename
     
     # map back to 0-19
-    test_y = np.where(labelId = 19, 255, test_y)
-    predict_y = np.where(labelId = 19, 255, predict_y)
+    test_y = np.where(labelId == 19, 255, test_y)
+    predict_y = np.where(labelId == 19, 255, predict_y)
     
     for i in range(len(files)):
         # 256,256,1 -- id --> change to color
