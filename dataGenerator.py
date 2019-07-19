@@ -12,22 +12,7 @@ labels = __import__('labels')
 id2trainId = {label.id: label.trainId for label in labels.labels}  # dictionary mapping from raw IDs to train IDs
 trainId2color = {label.trainId: label.color for label in labels.labels}  # dictionary mapping train IDs to colors as 3-tuples
 
-# def indices_to_one_hot(data, nb_classes):
-#     """Convert an iterable of indices to one-hot encoded labels."""
-#     targets = np.array(data).reshape(-1)
-#     print(targets.shape)
-#     return np.eye(nb_classes)[targets]
-
 def dataGen(train_x, train_y, val_x, val_y, batch_size):
-    
-#     datagen = ImageDataGenerator(
-#     featurewise_center=True,
-# #     featurewise_std_normalization=True,
-#     rotation_range=20,
-#     width_shift_range=0.2,
-#     height_shift_range=0.2,
-#     horizontal_flip=True)
-
 # train gen
     data_gen_args = dict(
 #                         horizontal_flip = True,
@@ -110,12 +95,14 @@ def imgTrain2color(trainId, shape = 256):
             colorimg[a,b] = palette(trainId[a,b])
     return colorimg
 
-def xy_array(mask_path, frame_path, save_path, split, shape=256, cl=20):
+def save_256(mask_path, frame_path, split, shape=256, cl=20):
+    save_path = '/home/yifan/Github/segmentation_train/dataset/cityscapes_all'
+    
     mask_path = os.path.join(mask_path, split)
     frame_path = os.path.join(frame_path, split)
     
-    mask_files = [f for f in glob.glob(mask_path + "/**/*_labelIds.png", recursive=True)]
-    frame_files = [f for f in glob.glob(frame_path + "/**/*.png", recursive=True)]
+    mask_files = os.listdir(mask_path)
+    frame_files = os.listdir(frame_path)
     
     #sort
     frame_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
@@ -123,16 +110,10 @@ def xy_array(mask_path, frame_path, save_path, split, shape=256, cl=20):
     mask_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
                                for x in re.findall(r'[^0-9]|[0-9]+', var)])
     
-    
     # binary encode
     
     num_files = len(mask_files)
     print(len(mask_files), len(frame_files))
-    
-#     x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
-#     y = np.zeros((num_files, shape, shape, cl)).astype(np.int8)
-    
-    
     
     for i in range(num_files):
         print(i)
@@ -140,29 +121,66 @@ def xy_array(mask_path, frame_path, save_path, split, shape=256, cl=20):
         labelId = scipy.misc.imresize(im, (shape,shape),interp='nearest')
         trainId = imgId2trainId(labelId)
         #np.save(outfile, x)
-        print(save_path)
-        outfile = os.path.join(save_path, split, 'mask', mask_files[i][:-12]+'trainIds.npy')
-        #, 'mask', mask_files[i][:-12]+'trainIds.npy'
+        outfile = os.path.join(save_path, 'gtFine_256', split)
+        if not os.path.isdir(outfile):
+            os.makedirs(outfile)
+        outfile = os.path.join(outfile, mask_files[i][:-12]+'trainIds.npy')
         print(outfile)
         np.save(outfile, trainId)
 #         mask = np.eye(cl)[trainId]
+        print(frame_files[i])
         im = np.array(Image.open(os.path.join(frame_path, frame_files[i])))
         frame = scipy.misc.imresize(im, (shape, shape))
-        outfile = os.path.join(save_path, split, 'frame', frame_files[i][:-3]+'npy')
-        np.save(outfile, frame)
         
+        outfile = os.path.join(save_path, 'left_256', split)
+        if not os.path.isdir(outfile):
+            os.makedirs(outfile)
+        outfile = os.path.join(outfile, frame_files[i][:-3]+'npy')
+        print(outfile)
+        np.save(outfile, frame)
 #         x[i] = frame
 #         y[i] = mask
                       
 #     return x, y
                  
+def xy_array(mask_path, frame_path, split, shape=256, cl=20):
+    
+    mask_path = os.path.join(mask_path, split)
+    frame_path = os.path.join(frame_path, split)
+    
+    mask_files = os.listdir(mask_path)
+    frame_files = os.listdir(frame_path)
+    
+    #sort
+    frame_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                               for x in re.findall(r'[^0-9]|[0-9]+', var)])
+    mask_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                               for x in re.findall(r'[^0-9]|[0-9]+', var)])
+    
+    # binary encode
+    
+    num_files = len(mask_files)
+    print(len(mask_files), len(frame_files))
+    
+    x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
+    y = np.zeros((num_files, shape, shape, cl)).astype(np.int8)
+    
+    for i in range(num_files):
+#         print(i)
+        img = np.load(os.path.join(frame_path, frame_files[i]))
+        trainId = np.load(os.path.join(mask_path, mask_files[i]))
+        mask = np.eye(cl)[trainId]
+        
+        x[i] = img
+        y[i] = mask
+    return x,y
+         
 
 def load_data(frame_path, mask_path, shape=256, cl=20):
-    save_path = '/home/yifan/Github/segmentation_train/dataset/cityscapes'
     #training set
-    train_x, train_y = xy_array(mask_path, frame_path, save_path, 'train')
-    val_x, val_y = xy_array(val_mask_path, val_frame_path,save_path, 'val')
-    test_x, test_y = xy_array(test_mask_path, test_frame_path,save_path, 'test')
+    train_x, train_y = xy_array(mask_path, frame_path, 'train')
+    val_x, val_y = xy_array(mask_path, frame_path, 'val')
+    test_x, test_y = xy_array(mask_path, frame_path, 'test')
 
     return train_x, train_y, val_x, val_y, test_x, test_y 
 

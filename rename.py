@@ -4,20 +4,36 @@ import numpy as np
   
 # Function to rename multiple files 
 def main(): 
-    directories = ['trainB']
-    PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes/"
-    i = 0
+    directories = ['gtFine', 'leftImg8bit']
+    splits = ['train', 'val', 'test']
+    BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/"
+    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_all/"
+    
     for d in directories:
-        file = os.path.join(PATH, d)
-        print(file)
-        for filename in os.listdir(file): 
-            dst = file+'/'+filename[:-6] + '.jpg'
-            src = file+'/'+filename
-            print(src,dst)
-            os.rename(src, dst)
-            i += 1
+        for split in splits:
+            directory = os.path.join(BASE_PATH, d, split)
+            save_path = os.path.join(NEW_PATH, d, split) # .../dataset/cityscapes_all/gtFine/train
+            if not os.path.isdir(save_path):
+                os.makedirs(save_path)
+            cities = os.listdir(directory)
+            i = 0
+            for city in cities:
+                cur_dir = os.path.join(directory, city)
+                all_files = os.listdir(cur_dir)
+#                 print(d,split,city,len(all_files), all_files[0])
+                for file in all_files:
+#                     if (d == 'gtFile' and file[-12:] != 'labelIds.png'):
+#                         print('not', file)
+#                         continue
+                    print(file)
+                    src = os.path.join(cur_dir, file)
+                    dst = os.path.join(save_path, file)
+                    print('src:', src)
+                    print('dst:', dst)
+                    os.rename(src, dst)
+                    i+=1
 
-            
+                    
 def mv_frames():
     PATH = "/home/yifanc3/dataset/data/"
     NEW_FRAME = PATH + 'masks_5m_256overlap'
