@@ -11,12 +11,7 @@ def Mean_IOU(y_true, y_pred):
     true_pixels = K.argmax(y_true, axis=-1) # = (n, h,w)
     pred_pixels = K.argmax(y_pred, axis=-1) 
     #ignore certain labels, those doesn't have one, and those are background
-    void_labels_1 = K.equal(K.sum(y_true, axis=-1), 0)  # y_true = (n, 256,256,20)
-    void_labels_2 = K.equal(true_pixels, 19) # ignore label 19, background
-    a = set(void_labels_1)
-    b = set(void_labels_2)
-    b_not_a = b - a
-    void_labels = np.concatenate((void_labels_1,np.array(list(b_not_a))))
+    void_labels = K.equal(true_pixels, 19) # ignore label 19, background
 
     # in our case, the last label is background (19)
     for i in range(0, nb_classes): # exclude first label (background) and last label (void)
