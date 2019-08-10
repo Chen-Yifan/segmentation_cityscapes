@@ -7,6 +7,7 @@ import tensorflow as tf
 
 def Mean_IOU(y_true, y_pred):
     nb_classes = K.int_shape(y_pred)[-1] #20
+    print(nb_classes)
     iou = []
     true_pixels = K.argmax(y_true, axis=-1) # = (n, h,w)
     pred_pixels = K.argmax(y_pred, axis=-1) 
