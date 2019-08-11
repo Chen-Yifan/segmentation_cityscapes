@@ -1,4 +1,5 @@
 dataset/
-./__pycache__
-./models/
-./.ipynb_checkpoints/
+dataset*
+__pycache__/
+models/
+.ipynb_checkpoints/
