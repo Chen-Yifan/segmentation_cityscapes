@@ -14,7 +14,7 @@ def main(shape=256, cl=20):
     directories = ['gtFine','leftImg8bit']
     splits = ['train','val','test']
     BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/"
-    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_all/"
+    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
     
     for d in directories:
         for split in splits:
@@ -54,11 +54,14 @@ def main(shape=256, cl=20):
                         im = np.array(Image.open(src))
                         labelId = scipy.misc.imresize(im, (shape,shape),interp='nearest')
                         trainId = labelId2trainId(labelId)
-                        mask = np.eye(cl)[trainId]
+#                         mask = np.eye(cl)[trainId]
                         dst = os.path.join(save_path, file[:-12]+'trainIds.npy') # *_labelIds.png
-                        np.save(dst,mask)
+                        np.save(dst,trainId)
                     i+=1
 
+def gen_new_test():
+    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
+    
     
 # Driver Code 
 if __name__ == '__main__': 

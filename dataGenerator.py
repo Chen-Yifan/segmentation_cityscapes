@@ -38,7 +38,7 @@ def assign_trainIds(label):
     Map the given label IDs to the train IDs appropriate for training
     Use the label mapping provided in labels.py from the cityscapes scripts
     """
-    label = np.array(label, dtype=np.float32)
+    label = np.array(label, dtype=int)
     if sys.version_info[0] < 3:
         for k, v in id2trainId.iteritems():
             label[label == k] = v
@@ -92,12 +92,13 @@ def xy_array(mask_path, frame_path, split, shape=256, cl=20):
     print(len(mask_files), len(frame_files))
     
     x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
-    y = np.zeros((num_files, shape, shape, cl)).astype('int')
+    y = np.zeros((num_files, shape, shape, cl)).astype(np.int64)
     
     for i in range(num_files):
 #         print(i)
         img = np.load(os.path.join(frame_path, frame_files[i])) # rescale to from 0-1
-        mask = np.load(os.path.join(mask_path, mask_files[i]))#20 cl
+        trainId = np.load(os.path.join(mask_path, mask_files[i]))# (256,256) 0-19 , to 20 cl
+        mask = np.eye(cl)[trainId]
         
         x[i] = img
         y[i] = mask
@@ -160,25 +161,24 @@ def save_results(mask_path, result_dir, test_x, test_y, predict_y):
     files = os.listdir(test_mask_path) # maintains the filename
     
     # map back to 0-19
+    test_y = np.argmax(test_y, axis=-1)
+    predict_y = np.argmax(predict_y, axis=-1).astype(np.int64)
+    
     test_y = np.where(test_y == 19, 255, test_y)
     predict_y = np.where(predict_y == 19, 255, predict_y)
     
     for i in range(len(files)):
         # 256,256,1 -- id --> change to color
-        trainId_gt = np.argmax(test_y[i], axis=-1)
+        trainId_gt = test_y[i]
         color_gt = palette(trainId_gt)
-        trainId_pred = np.argmax(predict_y[i], axis=-1)
+        trainId_pred = predict_y[i]
         color_pred = palette(trainId_pred)
         
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_A.jpg'), test_x[i].astype('uint8'))
-        
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.jpg'), color_gt.astype('uint8'))
-        
-        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.jpg'), color_pred.astype('uint8'))
-        
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.jpg'), trainId_gt.astype('uint8'))
-
-        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.jpg'), trainId_pred.astype('uint8'))
+        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_A.jpg'), test_x[i])
+        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.jpg'), color_gt)
+        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.jpg'), color_pred)
+        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.jpg'), trainId_gt)
+        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.jpg'), trainId_pred)
         
         
         

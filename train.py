@@ -2,7 +2,7 @@ from segmentation_models import Unet
 # from segmentation_models.backbones import get_preprocessing
 from segmentation_models.losses import bce_jaccard_loss
 from segmentation_models.metrics import iou_score
-from keras.optimizers import SGD,Adam
+from keras.optimizers import SGD,Adam,Adadelta
 from keras.callbacks import TensorBoard
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
@@ -16,36 +16,38 @@ import argparse
 def get_callbacks(name_weights, path, patience_lr):
     mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
 #     reduce_lr_loss = ReduceLROnPlateau(monitor='bce_jaccard_loss', factor=0.5, patience=patience_lr, verbose=1, epsilon=1e-4, mode='min')
+    reduce_lr_loss = ReduceLROnPlateau()
     logdir = os.path.join(path,'log')
     tensorboard = TensorBoard(log_dir=logdir, histogram_freq=0,
                             write_graph=True, write_images=True)
-    return [mcp_save, tensorboard]
+    return [mcp_save, reduce_lr_loss, tensorboard]
 
 #get arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_256')
-parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_200e/')
-parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_200e/')
+parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_all')
+parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_100e/')
+parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
 
 args = parser.parse_args()
 
 mkdir(args.ckpt_path)
-with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
+with open(os.path.join(args.ckpt_path,'args.txt'), "w") as file:
     for arg in vars(args):
         print(arg, getattr(args, arg))
         file.write('%s: %s \n' % (str(arg),str(getattr(args, arg))))
 
 BATCH_SIZE = args.batch_size
-frame_path = os.path.join(args.dataset_path,'leftImg8bit')
-mask_path = os.path.join(args.dataset_path,'gtFine')
+frame_path = os.path.join(args.dataset_path,'left_256')
+mask_path = os.path.join(args.dataset_path,'gtFine_256')
 
 
 #write to output
 
 # load data to lists
 train_x, train_y, val_x, val_y, test_x, test_y = load_data(frame_path, mask_path)
+print('train_y.shape:',train_y.shape)
 
 NO_OF_TRAINING_IMAGES = train_x.shape[0]
 NO_OF_VAL_IMAGES = val_x.shape[0]
@@ -60,7 +62,9 @@ m.summary()
 
 #optimizer
 opt= Adam(lr = 1e-4)
-m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
+opt2 = SGD(lr=0.01, decay=1e-6, momentum=0.99, nesterov=True)
+opt3 = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
+m.compile(optimizer=opt1, loss='categorical_crossentropy', metrics=[iou_score])
 
 # fit model
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'
