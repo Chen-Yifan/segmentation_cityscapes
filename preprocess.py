@@ -1,4 +1,5 @@
-import os 
+import os
+import re 
 # from libtiff import TIFF
 import numpy as np
 from shutil import copyfile
@@ -11,8 +12,8 @@ from dataGenerator import labelId2trainId
   
 # Function to rename multiple files 
 def main(shape=256, cl=20): 
-    directories = ['gtFine','leftImg8bit']
-    splits = ['train','val','test']
+    directories = ['leftImg8bit']
+    splits = ['train','val']
     BASE_PATH = "/home/yifanc3/Github/segmentation_train/dataset/"
     NEW_PATH = "/home/yifanc3/Github/segmentation_train/dataset/cityscapes_256/"
     
@@ -60,15 +61,25 @@ def main(shape=256, cl=20):
                     i+=1
 
 def gen_new_test():
-    PATH = "/home/yifanc3/Github/segmentation_train/dataset/cityscapes_256/left_256/"
+    PATH = "/home/yifanc3/Github/segmentation_train/dataset/cityscapes_256/gtFine_256/"
     OLD_PATH = PATH + 'train'
     NEW_PATH = PATH + 'test'
     mkdir(NEW_PATH)
-    all_files = os.listdir(OLD_PATH)[0:699]
-    print(all_files)
+    all_files = os.listdir(OLD_PATH)
+    all_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                                for x in re.findall(r'[^0-9]|[0-9]+', var)])   
+    all_files = all_files[0:699]
+    print(len(all_files))
+    for file in all_files:
+        src = os.path.join(OLD_PATH, file)
+        dst = os.path.join(NEW_PATH, file)
+        os.rename(src,dst)
+        print(dst)
     
 # Driver Code 
 if __name__ == '__main__': 
       
-    # Calling main() function 
+    ## Calling main() function 
+   # main()
     gen_new_test() 
+
