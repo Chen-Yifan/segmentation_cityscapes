@@ -60,11 +60,16 @@ def main(shape=256, cl=20):
                     i+=1
 
 def gen_new_test():
-    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
+    PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
+    OLD_PATH = PATH + 'train'
+    NEW_PATH = PATH + 'test'
+    all_files = os.listdir(OLD_PATH)[0:699]
+    print(all_files)
+    
     
     
 # Driver Code 
 if __name__ == '__main__': 
       
     # Calling main() function 
-    main() 
+    gen_new_test() 
