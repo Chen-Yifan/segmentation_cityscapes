@@ -13,8 +13,8 @@ from dataGenerator import labelId2trainId
 def main(shape=256, cl=20): 
     directories = ['gtFine','leftImg8bit']
     splits = ['train','val','test']
-    BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/"
-    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
+    BASE_PATH = "/home/yifanc3/Github/segmentation_train/dataset/"
+    NEW_PATH = "/home/yifanc3/Github/segmentation_train/dataset/cityscapes_256/"
     
     for d in directories:
         for split in splits:
@@ -59,9 +59,6 @@ def main(shape=256, cl=20):
                         np.save(dst,trainId)
                     i+=1
 
-def gen_new_test():
-    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
-    
     
 # Driver Code 
 if __name__ == '__main__': 
