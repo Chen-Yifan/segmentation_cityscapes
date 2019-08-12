@@ -1,10 +1,10 @@
 #!/bin/bash
 #PBS -k o
-#PBS -l nodes=nano1:ppn=2:gpus=1
+#PBS -l nodes=nano3:ppn=2:gpus=1
 #PBS -l walltime=08:00:00
 #PBS -M yifanc3@illinois.edu
 #PBS -m abe
-#PBS -N cityscapes_unet_softmax_AdamRd_100e
+#PBS -N cityscapes_unet_softmax_Adal_100e
 source activate tf3.6-v2
 cd Github/segmentation_train
 ./train_ncsa.sh
