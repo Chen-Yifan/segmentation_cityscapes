@@ -16,11 +16,11 @@ import argparse
 def get_callbacks(name_weights, path, patience_lr):
     mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
 #     reduce_lr_loss = ReduceLROnPlateau(monitor='bce_jaccard_loss', factor=0.5, patience=patience_lr, verbose=1, epsilon=1e-4, mode='min')
-    reduce_lr_loss = ReduceLROnPlateau()
+    # reduce_lr_loss = ReduceLROnPlateau(factor=0.5)
     logdir = os.path.join(path,'log')
     tensorboard = TensorBoard(log_dir=logdir, histogram_freq=0,
                             write_graph=True, write_images=True)
-    return [mcp_save, reduce_lr_loss, tensorboard]
+    return [mcp_save, tensorboard]
 
 #get arguments
 parser = argparse.ArgumentParser()
@@ -64,7 +64,7 @@ m.summary()
 opt= Adam(lr = 1e-4)
 opt2 = SGD(lr=0.01, decay=1e-6, momentum=0.99, nesterov=True)
 opt3 = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
-m.compile(optimizer=opt1, loss='categorical_crossentropy', metrics=[iou_score])
+m.compile(optimizer=opt3, loss='categorical_crossentropy', metrics=[iou_score])
 
 # fit model
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'

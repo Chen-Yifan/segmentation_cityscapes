@@ -14,7 +14,7 @@ def main(shape=256, cl=20):
     directories = ['gtFine','leftImg8bit']
     splits = ['train','val','test']
     BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/"
-    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
+    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_all/"
     
     for d in directories:
         for split in splits:
@@ -58,15 +58,6 @@ def main(shape=256, cl=20):
                         dst = os.path.join(save_path, file[:-12]+'trainIds.npy') # *_labelIds.png
                         np.save(dst,trainId)
                     i+=1
-
-def gen_new_test():
-    PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_256/"
-    OLD_PATH = PATH + 'train'
-    NEW_PATH = PATH + 'test'
-    all_files = os.listdir(OLD_PATH)[0:699]
-    print(all_files)
-    
-    
     
 # Driver Code 
 if __name__ == '__main__': 
