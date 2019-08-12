@@ -59,9 +59,16 @@ def main(shape=256, cl=20):
                         np.save(dst,trainId)
                     i+=1
 
+def gen_new_test():
+    PATH = "/home/yifanc3/Github/segmentation_train/dataset/cityscapes_256/left_256/"
+    OLD_PATH = PATH + 'train'
+    NEW_PATH = PATH + 'test'
+    mkdir(NEW_PATH)
+    all_files = os.listdir(OLD_PATH)[0:699]
+    print(all_files)
     
 # Driver Code 
 if __name__ == '__main__': 
       
     # Calling main() function 
-    main() 
+    gen_new_test() 
