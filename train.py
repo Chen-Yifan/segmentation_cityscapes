@@ -29,6 +29,7 @@ parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_chec
 parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
+parser.add_argument("--opt", type=int, default=1)
 
 args = parser.parse_args()
 
@@ -61,9 +62,12 @@ m = Unet(classes = 20, input_shape=(256, 256, 3), activation='softmax')
 m.summary()
 
 #optimizer
-opt= Adam(lr = 1e-4)
-opt2 = SGD(lr=0.01, decay=1e-6, momentum=0.99, nesterov=True)
-opt3 = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
+if args.opt==1:
+    opt= Adam(lr = 1e-4)
+elif args.opt==2:
+    opt = SGD(lr=0.01, decay=1e-6, momentum=0.99, nesterov=True)
+else:
+    opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
 m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
 
 # fit model

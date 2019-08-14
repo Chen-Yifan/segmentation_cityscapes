@@ -174,11 +174,13 @@ def save_results(mask_path, result_dir, test_x, test_y, predict_y):
         trainId_pred = predict_y[i]
         color_pred = palette(trainId_pred)
         
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_A.jpg'), test_x[i])
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.jpg'), color_gt)
-        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.jpg'), color_pred)
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.jpg'), trainId_gt)
-        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.jpg'), trainId_pred)
+        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_A.jpg'), test_x[i].astype('uint8'))
+        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.jpg'), color_gt.astype('uint8'))
+        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.jpg'), color_pred.astype('uint8'))
+#         imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.jpg'), trainId_gt)
+#         imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.jpg'), trainId_pred)
+        np.save(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.npy'), trainId_gt)
+        np.save(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.npy'), trainId_pred)
         
         
         

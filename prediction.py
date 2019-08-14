@@ -1,112 +1,66 @@
-from k_fold import *
 from utils import *
-from metrics import *
-from losses import *
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
 import os
 import tensorflow as tf
 import keras.backend as K
-import model
 import numpy as np
-from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Conv2D, Reshape
-# from layers import MaxPoolingWithArgmax2D, MaxUnpooling2D
-# from keras.layers.core import Dropout, Activation
-# from keras.models import Model,load_model
 from keras.optimizers import Adadelta, Adam
 import matplotlib.pyplot as plt
+from segmentation_models.losses import bce_jaccard_loss
+from segmentation_models.metrics import iou_score
+from keras.optimizers import SGD,Adam,Adadelta
+from dataGenerator import *
+from keras.models import model_from_json
+import argparse
 
-import keras.losses
-import keras.metrics
+#get arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_all')
+parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_100e/')
+parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
+parser.add_argument("--weights", type=str)
+parser.add_argument("--batch_size", type=int, default=16)
+parser.add_argument("--epochs", type=int, default=100)
+parser.add_argument("--opt", type=int, default=1)  
+args = parser.parse_args()
 
-# Model_name = '128overlap_300w_unetAdal_80ep_5m6bno3_prenorm_v2'
-# weights_name = 'weights.79-2.45-0.60.hdf5'
-# fold = 0
-# date = '7.25'
-# network = 'unet'
-# band = 5
+BATCH_SIZE = args.batch_size
+frame_path = os.path.join(args.dataset_path,'left_256')
+mask_path = os.path.join(args.dataset_path,'gtFine_256')
+test_x, test_y = xy_array(mask_path, frame_path, 'test')
 
-
-
-path = '/home/yifanc3/results/%s/%s/%s/'%(date,Model_name,fold)
-test_mask_path = path + 'mask'
-test_frame_path = path + 'frame'
-
-shape = 128
-
-def load_test(img_folder, mask_folder, shape=128, band=5):
-    n = os.listdir(img_folder)
-    img = np.zeros((len(n), shape, shape, band)).astype(np.float32)
-    mask = np.zeros((len(n), shape, shape, 2), dtype=np.float32)
-    
-    for i in range(len(n)): #initially from 0 to 16, c = 0. 
-        train_img_0 = np.load(img_folder+'/'+n[i]) #normalization:the range is about -100 to 360
-        if(train_img_0.shape!=(shape,shape,band)):
-            continue
-        img[i] = train_img_0 #add to array - img[0], img[1], and so on.
-        
-        #train_mask
-        train_mask = np.load(mask_folder+'/'+n[i]) # 1.0 or 2.0 
-        mask[i] = train_mask
-    return img, mask    
-
-def saveResult(save_path, test_mask_path, results,shape=128, num_class = 2):
-    if not os.path.isdir(save_path):
-        os.makedirs(save_path)
-    print(save_path)
-    n = os.listdir(test_mask_path)
-    result_shape = np.shape(results)
-    print(result_shape)
-    results = results.reshape(len(n),shape,shape,2)
-    #results = results.astype('uint8')
-    for i in range(result_shape[0]):
-        img = np.argmax(results[i],axis = -1)
-        img = np.squeeze(img)
-        #cv2.imwrite(os.path.join(save_path,"%s_predict.png"%n[i][0:-4]),results[i])
-        np.save(os.path.join(save_path,"%s_predict.npy"%n[i][0:-4]),img)
-
-keras.losses.pixel_wise_loss = pixel_wise_loss
-keras.metrics.Mean_IOU = Mean_IOU
-keras.metrics.recall = recall
-keras.metrics.precision = precision
-keras.metrics.f1score = f1score
-keras.metrics.per_pixel_acc = per_pixel_acc
-from keras.utils import CustomObjectScope
-
-
-Model_dir = '/home/yifanc3/models/%s/%s/ckpt_weights/%s/%s'%(date, Model_name, fold, weights_name)
-# load model?
+Model_dir = os.path.join(args.ckpt_path,args.weights)
 
 #model 
-if(network == 'unet'):
-    m = model.get_unet(input_shape = (shape,shape,band))
-else:
-    m = model.segnet(input_shape = (shape,shape,band))
-    
+json_path = os.path.join(args.ckpt_path,'model.json')
+json_file = open(json_path, 'r')
+loaded_model_json = json_file.read()
+json_file.close()
+
+m = model_from_json(loaded_model_json)
 m.load_weights(Model_dir)
 
-opt = Adam(lr=1E-5, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-opt2 = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)    
-m.compile( optimizer = opt2, loss = pixel_wise_loss, metrics = [per_pixel_acc, Mean_IOU, precision, recall, f1score])
+if args.opt==1:
+    opt= Adam(lr = 1e-4)
+elif args.opt==2:
+    opt = SGD(lr=0.01, decay=1e-6, momentum=0.99, nesterov=True)
+else:
+    opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
+m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
 
-X,Y = load_test(test_frame_path, test_mask_path, shape, band)
 
-score = m.evaluate(X, Y, verbose=0)
+score = m.evaluate(test_x, test_y, verbose=0)
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
-print("%s: %.2f%%" % (m.metrics_names[2], score[2]*100))
-print("%s: %.2f%%" % (m.metrics_names[3], score[3]*100))
-print("%s: %.2f%%" % (m.metrics_names[4], score[4]*100))
-print("%s: %.2f%%" % (m.metrics_names[5], score[5]*100))
-# print("%s: %.2f%%" % (m.metrics_names[6], score[6]*100))
+with open(os.path.join(args.ckpt_path,'output%s.txt'% args.weights[8:10]), "w") as file:
+    file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
-results = m.predict(X)
-new_r = np.argmax(results,axis=-1)
+predict_y = m.predict(test_x)
+
+result_path = args.results_path + args.weights[0:-5]+'-iou%.2f-results'%(score[1]*100)
+print(result_path)
+mkdir(result_path)
 
 #save image
-# saveMask_256("/home/yifanc3/results/v2_orig_mask",test_mask_path,Y)
-result_path = path + weights_name[0:-5]+'-iou%.2f-results'%(score[2]*100)
-
-if not os.path.isdir(result_path):
-    os.makedirs(result_path)
-saveResult(result_path,test_mask_path,results,shape)
+save_results(mask_path, result_path, test_x, test_y, predict_y)
