@@ -11,16 +11,26 @@ from utils import *
 from metrics import *
 import os
 import argparse
+from model import get_unet
 
 
-def get_callbacks(name_weights, path, patience_lr):
-    mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
-#     reduce_lr_loss = ReduceLROnPlateau(monitor='bce_jaccard_loss', factor=0.5, patience=patience_lr, verbose=1, epsilon=1e-4, mode='min')
-    reduce_lr_loss = ReduceLROnPlateau(factor=0.5)
-    logdir = os.path.join(path,'log')
-    tensorboard = TensorBoard(log_dir=logdir, histogram_freq=0,
-                            write_graph=True, write_images=True)
-    return [mcp_save, reduce_lr_loss, tensorboard]
+def get_callbacks(name_weights, path, patience_lr, opt=1):
+    if (opt == 3):
+        mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
+    #     reduce_lr_loss = ReduceLROnPlateau(monitor='bce_jaccard_loss', factor=0.5, patience=patience_lr, verbose=1, epsilon=1e-4, mode='min')
+        logdir = os.path.join(path,'log')
+        tensorboard = TensorBoard(log_dir=logdir, histogram_freq=0,
+                                write_graph=True, write_images=True)
+        return [mcp_save, tensorboard]
+        
+    else:
+        mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
+    #     reduce_lr_loss = ReduceLROnPlateau(monitor='bce_jaccard_loss', factor=0.5, patience=patience_lr, verbose=1, epsilon=1e-4, mode='min')
+        reduce_lr_loss = ReduceLROnPlateau(factor=0.5)
+        logdir = os.path.join(path,'log')
+        tensorboard = TensorBoard(log_dir=logdir, histogram_freq=0,
+                                write_graph=True, write_images=True)
+        return [mcp_save, reduce_lr_loss, tensorboard]
 
 #get arguments
 parser = argparse.ArgumentParser()
@@ -58,7 +68,8 @@ print('train: val', NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES)
 train_gen, val_gen = dataGen(train_x, train_y, val_x, val_y, BATCH_SIZE)
 
 # define model
-m = Unet(classes = 20, input_shape=(256, 256, 3), activation='softmax')
+# m = Unet(classes = 20, input_shape=(256, 256, 3), activation='softmax')
+m = get_unet()
 m.summary()
 
 #optimizer
@@ -72,7 +83,7 @@ m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
 
 # fit model
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'
-callbacks = get_callbacks(weights_path, args.ckpt_path, 5)
+callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 history = m.fit_generator(train_gen, epochs=args.epochs,
                           steps_per_epoch = (NO_OF_TRAINING_IMAGES//BATCH_SIZE),
                           validation_data=val_gen,
