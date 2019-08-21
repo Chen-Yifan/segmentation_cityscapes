@@ -24,12 +24,14 @@ parser.add_argument("--weights", type=str)
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
 parser.add_argument("--opt", type=int, default=1)  
+parser.add_argument("--split", type=str, default='test')  
 args = parser.parse_args()
+
 
 BATCH_SIZE = args.batch_size
 frame_path = os.path.join(args.dataset_path,'left_256')
 mask_path = os.path.join(args.dataset_path,'gtFine_256')
-test_x, test_y = xy_array(mask_path, frame_path, 'test')
+test_x, test_y = xy_array(mask_path, frame_path, args.split)
 
 Model_dir = os.path.join(args.ckpt_path,args.weights)
 
@@ -51,16 +53,23 @@ else:
 m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
 
 
-score = m.evaluate(test_x, test_y, verbose=0)
+score = m.evaluate(test_x/255, test_y, verbose=0)
+# NO_OF_TEST_IMAGES = test_x.shape[0]
+# test_gen = testGen(test_x/255, test_y, BATCH_SIZE)
+# score = m.evaluate_generator(test_gen, steps=(NO_OF_TEST_IMAGES//BATCH_SIZE), verbose=0)
+
+print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 with open(os.path.join(args.ckpt_path,'output%s.txt'% args.weights[8:10]), "w") as file:
+    file.write("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
-predict_y = m.predict(test_x)
+predict_y = m.predict(test_x/255)
+# predict_y = m.predict_generator(test_gen, steps=(NO_OF_TEST_IMAGES//BATCH_SIZE), verbose=0)
 
-result_path = args.results_path + args.weights[0:-5]+'-iou%.2f-results'%(score[1]*100)
+result_path = args.results_path + args.weights[0:-5]+'-iou%.2f-results_%s'%(score[1]*100, args.split)
 print(result_path)
 mkdir(result_path)
 
 #save image
-save_results(mask_path, result_path, test_x, test_y, predict_y)
+save_results(mask_path, result_path, test_x, test_y, predict_y, split=args.split)

@@ -105,7 +105,7 @@ def xy_array(mask_path, frame_path, split, shape=256, cl=20):
     return x,y
          
 
-def dataGen(train_x, train_y, val_x, val_y, batch_size):
+def trainGen(train_x, train_y, batch_size):
     '''
     can generate image and mask at the same time
     use the same seed for image_datagen and mask_datagen to ensure the transformation for image and mask is the same
@@ -142,6 +142,10 @@ def dataGen(train_x, train_y, val_x, val_y, batch_size):
     mask_gen = mask_datagen.flow(train_y, seed = seed, batch_size=batch_size, shuffle=True)
     train_gen = zip(img_gen, mask_gen)
 
+    return train_gen
+
+
+def testGen(val_x, val_y, batch_size):
 # val_gen
     img_datagen = ImageDataGenerator()
     mask_datagen = ImageDataGenerator()
@@ -153,11 +157,11 @@ def dataGen(train_x, train_y, val_x, val_y, batch_size):
     mask_gen = mask_datagen.flow(val_y, batch_size=batch_size, shuffle=True)
     val_gen = zip(img_gen, mask_gen)    
         
-    return train_gen, val_gen
+    return val_gen
 
 
-def save_results(mask_path, result_dir, test_x, test_y, predict_y):
-    test_mask_path = os.path.join(mask_path,'test')
+def save_results(mask_path, result_dir, test_x, test_y, predict_y, split='test'):
+    test_mask_path = os.path.join(mask_path,split)
     files = os.listdir(test_mask_path) # maintains the filename
     
     # map back to 0-19

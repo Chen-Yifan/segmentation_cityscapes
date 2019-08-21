@@ -62,10 +62,12 @@ print('train_y.shape:',train_y.shape)
 
 NO_OF_TRAINING_IMAGES = train_x.shape[0]
 NO_OF_VAL_IMAGES = val_x.shape[0]
-print('train: val', NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES)
+NO_OF_TEST_IMAGES = test_x.shape[0]
+print('train: val: test', NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES, NO_OF_TEST_IMAGES)
 
 #DATA AUGMENTATION
-train_gen, val_gen = dataGen(train_x, train_y, val_x, val_y, BATCH_SIZE)
+train_gen = trainGen(train_x, train_y, BATCH_SIZE)
+# val_gen = testGen(val_x, val_y, BATCH_SIZE)
 
 # define model
 # m = Unet(classes = 20, input_shape=(256, 256, 3), activation='softmax')
@@ -86,8 +88,7 @@ weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_sco
 callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 history = m.fit_generator(train_gen, epochs=args.epochs,
                           steps_per_epoch = (NO_OF_TRAINING_IMAGES//BATCH_SIZE),
-                          validation_data=val_gen,
-                          validation_steps=(NO_OF_VAL_IMAGES//BATCH_SIZE),
+                          validation_data=(val_x/255, val_y),
                           shuffle = True,
                           callbacks=callbacks)
 #save model structure
@@ -100,18 +101,23 @@ m.save(os.path.join(args.ckpt_path,'model.h5'))
 
 #prediction
 print('======Start Evaluating======')
-score = m.evaluate(test_x, test_y, verbose=0)
+#don't use generator but directly from array
+# test_gen = testGen(test_x, test_y, BATCH_SIZE)
+# score = m.evaluate_generator(test_gen, steps=(NO_OF_TEST_IMAGES//BATCH_SIZE), verbose=0)
+score = m.evaluate(test_x/255, test_y, verbose=0)
+print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
-with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
+with open(os.path.join(args.ckpt_path,'output%s.txt'% args.weights[8:10]), "w") as file:
+    file.write("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
 print('======Start Testing======')
-predict_y = m.predict(test_x)
+predict_y = m.predict(test_x / 255)
 
 #save image
 print('======Save Results======')
 mkdir(args.results_path)
-save_results(mask_path, args.results_path, test_x, test_y, predict_y)
+save_results(mask_path, args.results_path, test_x, test_y, predict_y, 'test')
 
 
 
