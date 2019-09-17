@@ -11,7 +11,7 @@ from utils import *
 from metrics import *
 import os
 import argparse
-from model import get_unet
+from model import *
 
 
 def get_callbacks(name_weights, path, patience_lr, opt=1):
@@ -37,6 +37,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_all')
 parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_100e/')
 parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
+parser.add_argument("--network", type=str, default='Unet')
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
 parser.add_argument("--opt", type=int, default=1)
@@ -54,7 +55,12 @@ frame_path = os.path.join(args.dataset_path,'left_256')
 mask_path = os.path.join(args.dataset_path,'gtFine_256')
 
 
-#write to output
+# define model
+if (args.network == 'Unet'):
+    m = Unet(classes = 20, input_shape=(256, 256, 3), activation='softmax')
+#     m = get_unet()
+elif (args.network == 'unet_noskip'):
+    m = unet_noskip()
 
 # load data to lists
 train_x, train_y, val_x, val_y, test_x, test_y = load_data(frame_path, mask_path)
@@ -68,11 +74,6 @@ print('train: val: test', NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES, NO_OF_TEST_IM
 #DATA AUGMENTATION
 train_gen = trainGen(train_x, train_y, BATCH_SIZE)
 # val_gen = testGen(val_x, val_y, BATCH_SIZE)
-
-# define model
-# m = Unet(classes = 20, input_shape=(256, 256, 3), activation='softmax')
-m = get_unet()
-m.summary()
 
 #optimizer
 if args.opt==1:
@@ -107,7 +108,7 @@ print('======Start Evaluating======')
 score = m.evaluate(test_x/255, test_y, verbose=0)
 print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
-with open(os.path.join(args.ckpt_path,'output%s.txt'% args.weights[8:10]), "w") as file:
+with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
     file.write("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 

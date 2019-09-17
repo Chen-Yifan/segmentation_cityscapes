@@ -1,8 +1,7 @@
 python prediction.py \
---ckpt_path /media/exfat/yifan/rf_checkpoints/cityscapes_getunet_softmax_Adam_100e/ \
---results_path /media/exfat/yifan/rf_results/cityscapes_getunet_softmax_Adam_100e/ \
+--ckpt_path /media/exfat/yifan/rf_checkpoints/cityscapes_getunet_softmax_Adam_100e_nogen/ \
+--results_path /media/exfat/yifan/rf_results/cityscapes_getunet_softmax_Adam_100e_nogen/ \
 --epochs 100 \
 --opt 1 \
---split val \
---weights weights.20-2.15-0.09.hdf5
-
+--split test \
+--weights weights.44-0.56-0.22.hdf5
