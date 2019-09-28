@@ -13,11 +13,12 @@ from utils import *
 labels = __import__('labels')
 id2trainId = {label.id: label.trainId for label in labels.labels}  # dictionary mapping from raw IDs to train IDs
 trainId2color = {label.trainId: label.color for label in labels.labels}  # dictionary mapping train IDs to colors as 3-tuples
+id2color = {label.id: label.color for label in labels.labels} 
 
 
 def palette(label,shape=256):
     '''
-    Map trainIds to colors as specified in labels.py
+    Map labelIds to colors as specified in labels.py
     '''
 #     print(label.shape, label.ndim)
     if label.ndim == 3:
@@ -25,54 +26,23 @@ def palette(label,shape=256):
 #         print('yes')
     color = np.empty((shape, shape, 3),dtype=int)
     if sys.version_info[0] < 3:
-        for k, v in trainId2color.iteritems():
+        for k, v in id2color.iteritems():
             color[label == k, :] = v
     else:
-        for k, v in trainId2color.items():
+        for k, v in id2color.items():
             color[label == k, :] = v
     return color
 
 
-def assign_trainIds(label):
-    """
-    Map the given label IDs to the train IDs appropriate for training
-    Use the label mapping provided in labels.py from the cityscapes scripts
-    """
-    label = np.array(label, dtype=int)
-    if sys.version_info[0] < 3:
-        for k, v in id2trainId.iteritems():
-            label[label == k] = v
-    else:
-        for k, v in id2trainId.items():
-            label[label == k] = v
-    return label
-
-
-def labelId2trainId(labelId, shape = 256):
-    for a in range(shape):
-        for b in range(shape):
-            labelId[a,b] = assign_trainIds(labelId[a,b])
-    trainId = np.where(labelId == -1, 19, labelId) # unlabeled
-    trainId = np.where(labelId == 255, 19, labelId)
-    return trainId
-
-
-# def imgTrain2color(trainId, shape = 256):
-#     colorimg = np.zeros((shape,shape,3))
-#     for a in range(shape):
-#         for b in range(shape):
-#             colorimg[a,b,:] = palette(trainId[a,b])
-#     return colorimg
-
-def load_data(frame_path, mask_path, shape=256, cl=20):
+def load_data(frame_path, mask_path, shape=256, cl=33):
     #training set
-    train_x, train_y = xy_array(mask_path, frame_path, 'train')
-    val_x, val_y = xy_array(mask_path, frame_path, 'val')
-    test_x, test_y = xy_array(mask_path, frame_path, 'test')
+    train_x, train_y = xy_formarray(mask_path, frame_path, 'train', shape, cl)
+    val_x, val_y = xy_formarray(mask_path, frame_path, 'val', shape, cl)
+#     test_x, test_y = xy_formarray(mask_path, frame_path, 'test')
 
-    return train_x, train_y, val_x, val_y, test_x, test_y 
+    return train_x, train_y, val_x, val_y
 
-def xy_array(mask_path, frame_path, split, shape=256, cl=20):
+def xy_formarray(mask_path, frame_path, split, shape=256, cl=33):
     
     mask_path = os.path.join(mask_path, split)
     frame_path = os.path.join(frame_path, split)
@@ -87,7 +57,6 @@ def xy_array(mask_path, frame_path, split, shape=256, cl=20):
                                for x in re.findall(r'[^0-9]|[0-9]+', var)])
     
     # binary encode
-    
     num_files = len(mask_files)
     print(len(mask_files), len(frame_files))
     
@@ -96,9 +65,9 @@ def xy_array(mask_path, frame_path, split, shape=256, cl=20):
     
     for i in range(num_files):
 #         print(i)
-        img = np.load(os.path.join(frame_path, frame_files[i])) # rescale to from 0-1
-        trainId = np.load(os.path.join(mask_path, mask_files[i]))# (256,256) 0-19 , to 20 cl
-        mask = np.eye(cl)[trainId]
+        img = np.load(os.path.join(frame_path, frame_files[i]))
+        labelId = np.load(os.path.join(mask_path, mask_files[i]))# (256,256) 
+        mask = np.eye(cl)[labelId]
         
         x[i] = img
         y[i] = mask
@@ -186,57 +155,6 @@ def save_results(mask_path, result_dir, test_x, test_y, predict_y, split='test')
         np.save(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.npy'), trainId_gt)
         np.save(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.npy'), trainId_pred)
         
-        
-        
-# def save_256(mask_path, frame_path, split, shape=256, cl=20):
-#     save_path = '/home/yifan/Github/segmentation_train/dataset/cityscapes_all'
-    
-#     mask_path = os.path.join(mask_path, split)
-#     frame_path = os.path.join(frame_path, split)
-    
-#     mask_files = os.listdir(mask_path)
-#     frame_files = os.listdir(frame_path)
-    
-#     #sort
-#     frame_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
-#                                for x in re.findall(r'[^0-9]|[0-9]+', var)])
-#     mask_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
-#                                for x in re.findall(r'[^0-9]|[0-9]+', var)])
-    
-#     # binary encode
-#     num_files = len(frame_files)
-#     print(len(mask_files), len(frame_files))
-    
-#     for i in range(num_files):
-#         print(i)
-# #         im = np.array(Image.open(os.path.join(mask_path, mask_files[i])))
-# #         labelId = scipy.misc.imresize(im, (shape,shape),interp='nearest')
-# #         trainId = labelId2trainId(labelId)
-# #         #np.save(outfile, x)
-# #         outfile = os.path.join(save_path, 'gtFine_256', split)
-# #         if not os.path.isdir(outfile):
-# #             os.makedirs(outfile)
-# #         outfile = os.path.join(outfile, mask_files[i][:-12]+'trainIds.npy')
-# #         print(outfile)
-# #         np.save(outfile, trainId)
-# # #         mask = np.eye(cl)[trainId]
-
-#         print(frame_files[i])
-#         im = np.array(Image.open(os.path.join(frame_path, frame_files[i])))
-#         frame = scipy.misc.imresize(im, (shape, shape))
-        
-#         outfile = os.path.join(save_path, 'left_256', split)
-#         mkdir(outfile)
-        
-#         outfile = os.path.join(outfile, frame_files[i][:-3]+'npy')
-#         print(outfile)
-#         np.save(outfile, frame)
-# #         x[i] = frame
-# #         y[i] = mask
-                      
-# #     return x, y
-                 
-
 
     
     
