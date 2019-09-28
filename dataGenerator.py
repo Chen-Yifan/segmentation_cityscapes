@@ -34,15 +34,15 @@ def palette(label,shape=256):
     return color
 
 
-def load_data(frame_path, mask_path, shape=256, cl=33):
+def load_data(frame_path, mask_path, shape=256, cl=34):
     #training set
-    train_x, train_y = xy_formarray(mask_path, frame_path, 'train', shape, cl)
     val_x, val_y = xy_formarray(mask_path, frame_path, 'val', shape, cl)
+    train_x, train_y = xy_formarray(mask_path, frame_path, 'train', shape, cl)
 #     test_x, test_y = xy_formarray(mask_path, frame_path, 'test')
 
     return train_x, train_y, val_x, val_y
 
-def xy_formarray(mask_path, frame_path, split, shape=256, cl=33):
+def xy_formarray(mask_path, frame_path, split, shape=256, cl=34):
     
     mask_path = os.path.join(mask_path, split)
     frame_path = os.path.join(frame_path, split)
@@ -61,20 +61,20 @@ def xy_formarray(mask_path, frame_path, split, shape=256, cl=33):
     print(len(mask_files), len(frame_files))
     
     x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
-    y = np.zeros((num_files, shape, shape, cl)).astype(np.int64)
+    y = np.zeros((num_files, shape, shape, 1)).astype(np.uint8)
     
     for i in range(num_files):
 #         print(i)
         img = np.load(os.path.join(frame_path, frame_files[i]))
-        labelId = np.load(os.path.join(mask_path, mask_files[i]))# (256,256) 
-        mask = np.eye(cl)[labelId]
+        mask = np.load(os.path.join(mask_path, mask_files[i]))# (256,256) 
+#         mask = np.eye(cl)[labelId]
         
         x[i] = img
-        y[i] = mask
+        y[i] = mask[..., np.newaxis]
     return x,y
          
 
-def trainGen(train_x, train_y, batch_size):
+def trainGen(train_x, train_y, batch_size, cl=34):
     '''
     can generate image and mask at the same time
     use the same seed for image_datagen and mask_datagen to ensure the transformation for image and mask is the same
@@ -109,6 +109,9 @@ def trainGen(train_x, train_y, batch_size):
     seed = 2018
     img_gen = img_datagen.flow(train_x, seed = seed, batch_size=batch_size, shuffle=True)#shuffling
     mask_gen = mask_datagen.flow(train_y, seed = seed, batch_size=batch_size, shuffle=True)
+    
+    mask_gen = np.eye(cl)[mask_gen]
+    print(mask_gen.shape)
     train_gen = zip(img_gen, mask_gen)
 
     return train_gen
@@ -122,8 +125,9 @@ def testGen(val_x, val_y, batch_size):
     img_datagen.fit(val_x)
     mask_datagen.fit(val_y)
     
-    img_gen = img_datagen.flow(val_x, batch_size=batch_size, shuffle=True)
-    mask_gen = mask_datagen.flow(val_y, batch_size=batch_size, shuffle=True)
+    seed = 1
+    img_gen = img_datagen.flow(val_x, seed = seed, batch_size=batch_size, shuffle=True)
+    mask_gen = mask_datagen.flow(val_y, seed = seed, batch_size=batch_size, shuffle=True)
     val_gen = zip(img_gen, mask_gen)    
         
     return val_gen
@@ -133,27 +137,25 @@ def save_results(mask_path, result_dir, test_x, test_y, predict_y, split='test')
     test_mask_path = os.path.join(mask_path,split)
     files = os.listdir(test_mask_path) # maintains the filename
     
-    # map back to 0-19
+    # map back to 0-33
     test_y = np.argmax(test_y, axis=-1)
-    predict_y = np.argmax(predict_y, axis=-1).astype(np.int64)
-    
-    test_y = np.where(test_y == 19, 255, test_y)
-    predict_y = np.where(predict_y == 19, 255, predict_y)
+    predict_y = np.argmax(predict_y, axis=-1).astype(np.uint8)
     
     for i in range(len(files)):
         # 256,256,1 -- id --> change to color
-        trainId_gt = test_y[i]
-        color_gt = palette(trainId_gt)
-        trainId_pred = predict_y[i]
-        color_pred = palette(trainId_pred)
+        label_gt = test_y[i]
+        color_gt = palette(label_gt)
+        label_pred = predict_y[i]
+        color_pred = palette(label_pred)
         
         imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_A.jpg'), test_x[i].astype('uint8'))
         imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.jpg'), color_gt.astype('uint8'))
         imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.jpg'), color_pred.astype('uint8'))
-#         imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.jpg'), trainId_gt)
-#         imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.jpg'), trainId_pred)
-        np.save(os.path.join(result_dir, files[i][:-20] + '_B_trainId_gt.npy'), trainId_gt)
-        np.save(os.path.join(result_dir,files[i][:-20] + '_B_trainId_pred.npy'), trainId_pred)
+        
+        label_gt = scipy.misc.imresize(label_gt, (1024,2048),interp='nearest')
+        label_pred = scipy.misc.imresize(label_pred, (1024,2048),interp='nearest')
+        np.save(os.path.join(result_dir, files[i][:-20] + '_B_label_gt.npy'), label_gt)
+        np.save(os.path.join(result_dir,files[i][:-20] + '_B_label_pred.npy'), label_pred)
         
 
     
