@@ -61,16 +61,16 @@ def xy_formarray(mask_path, frame_path, split, shape=256, cl=34):
     print(len(mask_files), len(frame_files))
     
     x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
-    y = np.zeros((num_files, shape, shape, 1)).astype(np.uint8)
+    y = np.zeros((num_files, shape, shape, cl)).astype(np.uint8)
     
     for i in range(num_files):
 #         print(i)
         img = np.load(os.path.join(frame_path, frame_files[i]))
         mask = np.load(os.path.join(mask_path, mask_files[i]))# (256,256) 
-#         mask = np.eye(cl)[labelId]
+        mask = np.eye(cl)[mask]
         
         x[i] = img
-        y[i] = mask[..., np.newaxis]
+        y[i] = mask
     return x,y
          
 
@@ -110,7 +110,7 @@ def trainGen(train_x, train_y, batch_size, cl=34):
     img_gen = img_datagen.flow(train_x, seed = seed, batch_size=batch_size, shuffle=True)#shuffling
     mask_gen = mask_datagen.flow(train_y, seed = seed, batch_size=batch_size, shuffle=True)
     
-    mask_gen = np.eye(cl)[mask_gen]
+#     mask_gen = np.eye(cl)[mask_gen]
     print(mask_gen.shape)
     train_gen = zip(img_gen, mask_gen)
 

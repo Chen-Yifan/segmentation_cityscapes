@@ -70,7 +70,7 @@ m.summary()
 '''Load data'''
 train_x, train_y, val_x, val_y= load_data(frame_path, mask_path, 256, cl)
 print('train_y.shape:',train_y.shape)
-val_y = np.eye(cl)[val_y]
+# val_y = np.eye(cl)[val_y]
 
 NO_OF_TRAINING_IMAGES = train_x.shape[0]
 NO_OF_VAL_IMAGES = val_x.shape[0]
