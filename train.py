@@ -13,7 +13,6 @@ import os
 import argparse
 from model import *
 
-
 def get_callbacks(name_weights, path, patience_lr, opt=1):
     mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
     reduce_lr_loss = ReduceLROnPlateau(factor=0.5)
@@ -68,17 +67,16 @@ m.summary()
     
     
 '''Load data'''
-train_x, train_y, val_x, val_y= load_data(frame_path, mask_path, 256, cl)
-print('train_y.shape:',train_y.shape)
-val_y = np.eye(cl)[val_y]
+# train_x, train_y, val_x, val_y= load_data(frame_path, mask_path, 256, cl)
+# print('train_y.shape:',train_y.shape)
+# # val_y = np.eye(cl)[val_y]
 
-NO_OF_TRAINING_IMAGES = train_x.shape[0]
-NO_OF_VAL_IMAGES = val_x.shape[0]
-print('train: val: test', NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES)
+# NO_OF_TRAINING_IMAGES = train_x.shape[0]
+# NO_OF_VAL_IMAGES = val_x.shape[0]
+# print('train: val: test', NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES)
 
 '''Data generator'''
 #DATA AUGMENTATION
-train_gen = trainGen(train_x, train_y, BATCH_SIZE)
 
 
 #optimizer
@@ -95,11 +93,13 @@ m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'
 callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 
-history = m.fit_generator(train_gen, epochs=args.epochs,
-                          steps_per_epoch = (NO_OF_TRAINING_IMAGES//BATCH_SIZE),
-                          validation_data=(val_x/255, val_y),
-                          shuffle = True,
-                          callbacks=callbacks)
+# history = m.fit_generator(train_gen, epochs=args.epochs,
+#                           steps_per_epoch = (NO_OF_TRAINING_IMAGES//BATCH_SIZE),
+#                           validation_data=(val_x/255, val_y),
+#                           shuffle = True,
+#                           callbacks=callbacks)
+from newGen import dataGen
+history = trainGen(BATCH_SIZE, args.epoch, 256 )
 
 ''' save model structure '''
 model_json = m.to_json()
