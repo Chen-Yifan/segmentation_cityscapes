@@ -110,8 +110,6 @@ def trainGen(train_x, train_y, batch_size, cl=34):
     img_gen = img_datagen.flow(train_x, seed = seed, batch_size=batch_size, shuffle=True)#shuffling
     mask_gen = mask_datagen.flow(train_y, seed = seed, batch_size=batch_size, shuffle=True)
     
-#     mask_gen = np.eye(cl)[mask_gen]
-    print(mask_gen.shape)
     train_gen = zip(img_gen, mask_gen)
 
     return train_gen
