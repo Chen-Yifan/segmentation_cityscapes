@@ -17,21 +17,25 @@ import argparse
 
 #get arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_all')
-parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_100e/')
-parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
+parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/npy/')
+parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_Unet_softmax_Adam_100e_orig/')
+parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_Unet_softmax_Adam_100e_orig/')
 parser.add_argument("--weights", type=str)
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
 parser.add_argument("--opt", type=int, default=1)  
 parser.add_argument("--split", type=str, default='test')  
+parser.add_argument("--n_classes", type=int, default=34)
 args = parser.parse_args()
 
 
 BATCH_SIZE = args.batch_size
-frame_path = os.path.join(args.dataset_path,'left_256')
-mask_path = os.path.join(args.dataset_path,'gtFine_256')
-test_x, test_y = xy_array(mask_path, frame_path, args.split)
+cl = args.n_classes
+
+frame_path = os.path.join(args.dataset_path,'leftImg8bit')
+mask_path = os.path.join(args.dataset_path,'gtFine_label')
+test_x, test_y = xy_formarray(mask_path, frame_path, args.split, 256,cl)
+val_x, val_y = xy_formarray(mask_path, frame_path, 'val', 256,cl)
 
 Model_dir = os.path.join(args.ckpt_path,args.weights)
 
@@ -53,7 +57,7 @@ else:
 m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
 
 
-score = m.evaluate(test_x/255, test_y, verbose=0)
+score = m.evaluate(val_x/255, val_y, verbose=0)
 # NO_OF_TEST_IMAGES = test_x.shape[0]
 # test_gen = testGen(test_x/255, test_y, BATCH_SIZE)
 # score = m.evaluate_generator(test_gen, steps=(NO_OF_TEST_IMAGES//BATCH_SIZE), verbose=0)

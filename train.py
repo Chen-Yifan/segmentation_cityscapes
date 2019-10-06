@@ -120,14 +120,14 @@ with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
 print('======Start Testing======')
-test_x, test_y = xy_formarray(mask_path, frame_path, 'test',256, cl)
+#test_x, test_y = xy_formarray(mask_path, frame_path, 'test',256, cl)
 # test_y = np.eye(cl)[test_y]
-predict_y = m.predict(test_x / 255)
+#predict_y = m.predict(test_x / 255)
 
 #save image
-print('======Save Results======')
-mkdir(args.results_path)
-save_results(mask_path, args.results_path, test_x, test_y, predict_y, 'test')
+#print('======Save Results======')
+#mkdir(args.results_path)
+#save_results(mask_path, args.results_path, test_x, test_y, predict_y, 'test')
 
 
 

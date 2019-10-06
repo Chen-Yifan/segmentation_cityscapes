@@ -147,13 +147,13 @@ def save_results(mask_path, result_dir, test_x, test_y, predict_y, split='test')
         color_pred = palette(label_pred)
         
         imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_A.jpg'), test_x[i].astype('uint8'))
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.jpg'), color_gt.astype('uint8'))
-        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.jpg'), color_pred.astype('uint8'))
+        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.png'), color_gt.astype('uint8'))
+        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.png'), color_pred.astype('uint8'))
         
         label_gt = scipy.misc.imresize(label_gt, (1024,2048),interp='nearest')
         label_pred = scipy.misc.imresize(label_pred, (1024,2048),interp='nearest')
-        np.save(os.path.join(result_dir, files[i][:-20] + '_B_label_gt.npy'), label_gt)
-        np.save(os.path.join(result_dir,files[i][:-20] + '_B_label_pred.npy'), label_pred)
+        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_label_gt.png'), label_gt)
+        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_label_pred.png'), label_pred)
         
 
     
