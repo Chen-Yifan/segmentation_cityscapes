@@ -12,6 +12,7 @@ from metrics import *
 import os
 import argparse
 from model import *
+from newGen import *
 
 def get_callbacks(name_weights, path, patience_lr, opt=1):
     mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
@@ -27,7 +28,7 @@ def get_callbacks(name_weights, path, patience_lr, opt=1):
 
 '''Options'''
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/png/')
+parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/')
 parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_100e/')
 parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
 parser.add_argument("--network", type=str, default='Unet')
@@ -46,7 +47,7 @@ with open(os.path.join(args.ckpt_path,'args.txt'), "w") as file:
 
 BATCH_SIZE = args.batch_size
 frame_path = os.path.join(args.dataset_path,'leftImg8bit')
-mask_path = os.path.join(args.dataset_path,'gtFine_label')
+mask_path = os.path.join(args.dataset_path,'gtFine')
 cl = args.n_classes
 
 '''define model
@@ -64,7 +65,6 @@ elif (args.network == 'unet_noskip'):
 else:
     m = Unet('resnet18', classes=cl, input_shape=(256, 256, 3), activation='softmax')
 m.summary()
-    
     
 '''Load data'''
 # train_x, train_y, val_x, val_y= load_data(frame_path, mask_path, 256, cl)
@@ -98,8 +98,9 @@ callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 #                           validation_data=(val_x/255, val_y),
 #                           shuffle = True,
 #                           callbacks=callbacks)
-from newGen import dataGen
-train_generator,val_generator,num_train,num_val = dataGen(BATCH_SIZE, args.epochs, 256 )
+
+train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, args.epochs, (1024,2048))
+val_generator,num_val = val_dataGen(frame_path, mask_path, 'val', BATCH_SIZE, args.epochs, (1024,2048))
 history = m.fit_generator(
                         train_generator,
                         steps_per_epoch = num_train,
@@ -107,8 +108,9 @@ history = m.fit_generator(
                         validation_steps =num_val,
                         epochs=args.epochs,
                         verbose=1,
-			callbacks=callbacks
+			            callbacks=callbacks
                         )
+
 ''' save model structure '''
 model_json = m.to_json()
 with open(os.path.join(args.ckpt_path,"model.json"), "w") as json_file:
@@ -119,8 +121,9 @@ m.save(os.path.join(args.ckpt_path,'model.h5'))
 
 '''Evaluate and Test '''
 print('======Start Evaluating======')
-#don't use generator but directly from array
-score = m.evaluate(val_x/255, val_y, verbose=0)
+test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', BATCH_SIZE, args.epochs, (1024,2048))
+
+score = m.evaluate_generatro(test_generator, steps=num_test)
 print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
@@ -128,14 +131,12 @@ with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
 print('======Start Testing======')
-test_x, test_y = xy_formarray(mask_path, frame_path, 'test',256, cl)
-# test_y = np.eye(cl)[test_y]
-predict_y = m.predict(test_x / 255)
+predict_y = m.predict_generator(test_generator, steps=num_test)
 
 #save image
-print('======Save Results======')
-mkdir(args.results_path)
-save_results(mask_path, args.results_path, test_x, test_y, predict_y, 'test')
+# print('======Save Results======')
+# mkdir(args.results_path)
+# save_results(mask_path, args.results_path, test_x, test_y, predict_y, 'test')
 
 
 

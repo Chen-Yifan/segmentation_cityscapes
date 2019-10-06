@@ -1,19 +1,15 @@
 from keras.preprocessing.image import ImageDataGenerator
 import os
 
-def dataGen(batch_size=1, epochs=1, shape=256):
+def dataGen(frame_path, mask_path, batch_size=1, epochs=1, shape=(1024,2048)):
     # Training path
-    frame_path = '/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/png/leftImg8bit'
-    mask_path = '/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/png/gtFine_label'
+    # frame_path = '/home/yifan/Github/segmentation_train/dataset/leftImg8bit'
+    # mask_path = '/home/yifan/Github/segmentation_train/dataset/gtFine'
     X_path= os.path.join(frame_path, 'train') # input image
     Y_path = os.path.join(mask_path, 'train') # ground-truth label
 
-    h = shape # image height
-    w = shape # image width
-
-    # Validation path
-    val_X_path = os.path.join(frame_path, 'val')
-    val_Y_path = os.path.join(mask_path, 'val')
+    h = shape[0] # image height
+    w = shape[1] # image width
 
     # Train data generator
     x_gen_args = dict(
@@ -55,13 +51,24 @@ def dataGen(batch_size=1, epochs=1, shape=256):
         batch_size=batch_size,
         shuffle = True,
         class_mode=None,
-        interpolation='nearest',
+        interpolation='bilinear',
         seed=seed)
     
     # combine image_ and mask_generator into one
     train_generator = zip(image_generator, mask_generator)
     num_train = len(image_generator)
     
+    return train_generator, num_train
+
+
+def val_dataGen(frame_path, mask_path, split, batch_size=1, epochs=1, shape=(1024,2048)):
+    h = shape[0] # image height
+    w = shape[1] # image width
+
+    # Validation path
+    val_X_path = os.path.join(frame_path, split)
+    val_Y_path = os.path.join(mask_path, split)
+
     # val data generator
     image_datagen = ImageDataGenerator(rescale = 1./255)
     mask_datagen = ImageDataGenerator()
@@ -81,10 +88,10 @@ def dataGen(batch_size=1, epochs=1, shape=256):
         batch_size=batch_size,
         shuffle = False,
         class_mode=None,
+        interpolation='bilinear',
         seed=seed)
 
     val_generator = zip(image_generator, mask_generator)
     num_val = len(image_generator)
-    
-    print(num_train, num_val)
-    return train_generator,val_generator, num_train, num_val
+
+    return val_generator, num_val
