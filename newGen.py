@@ -4,15 +4,15 @@ def dataGen(batch_size=16, epochs=1, shape=256):
     # Training path
     frame_path = '/home/yifan/Github/segmentation_train/dataset/leftImg8bit'
     mask_path = '/home/yifan/Github/segmentation_train/dataset/gtFine'
-    X_path= os.path.join(frame_path, 'train') # input image
-    Y_path = os.path.join(mask_path, 'train') # ground-truth label
+    X_path= os.path.join(frame_path, 'val') # input image
+    Y_path = os.path.join(mask_path, 'val') # ground-truth label
 
     h = shape # image height
     w = shape # image width
 
     # Validation path
-    val_X_path = os.path.join(frame_path, 'val')
-    val_Y_path = os.path.join(mask_path, 'val')
+    val_X_path = os.path.join(frame_path, 'test')
+    val_Y_path = os.path.join(mask_path, 'test')
 
     # Train data generator
     x_gen_args = dict(
