@@ -36,6 +36,8 @@ parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
 parser.add_argument("--opt", type=int, default=1)
 parser.add_argument("--n_classes", type=int, default=34)
+parser.add_argument("--h", type=int, default=1024)
+parser.add_argument("--w", type=int, default=2048)
 
 args = parser.parse_args()
 
@@ -49,21 +51,23 @@ BATCH_SIZE = args.batch_size
 frame_path = os.path.join(args.dataset_path,'leftImg8bit')
 mask_path = os.path.join(args.dataset_path,'gtFine')
 cl = args.n_classes
-
+h = args.h
+w = args.w
 '''define model
     
     Unet:  from segmentation_models
     unet & unet_noskip :  implemented in models module, warning when calculating the ERF
     
 '''
+input_shape = (h,w,3)
 if (args.network == 'Unet'):
 
-    m = Unet(classes = cl, input_shape=(256, 256, 3), activation='softmax')
+    m = Unet(classes = cl, input_shape=input_shape, activation='softmax')
 #     m = get_unet()
 elif (args.network == 'unet_noskip'):
     m = unet_noskip()
 else:
-    m = Unet('resnet18', classes=cl, input_shape=(256, 256, 3), activation='softmax')
+    m = Unet('resnet18', classes=cl, input_shape=input_shape, activation='softmax')
 m.summary()
     
 '''Load data'''

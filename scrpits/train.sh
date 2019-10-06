@@ -4,5 +4,5 @@ python train.py \
 --network Unet \
 --epochs 2 \
 --n_classes 34 \
---batch_size 16 \
+--batch_size 1 \
 --opt 1
