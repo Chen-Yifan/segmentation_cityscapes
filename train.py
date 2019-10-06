@@ -27,7 +27,7 @@ def get_callbacks(name_weights, path, patience_lr, opt=1):
 
 '''Options'''
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/npy/')
+parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/png/')
 parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_100e/')
 parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
 parser.add_argument("--network", type=str, default='Unet')
@@ -87,7 +87,7 @@ elif args.opt==2:
 else:
     opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
     
-m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
+m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score])
 
 # fit model
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'
@@ -102,11 +102,12 @@ from newGen import dataGen
 train_generator,val_generator,num_train,num_val = dataGen(BATCH_SIZE, args.epochs, 256 )
 history = m.fit_generator(
                         train_generator,
-                        steps_per_epoch = num_train/BATCH_SIZE,
+                        steps_per_epoch = num_train,
                         validation_data=val_generator,
-                        validation_steps =num_val/BATCH_SIZE,
+                        validation_steps =num_val,
                         epochs=args.epochs,
-                        verbose=1
+                        verbose=1,
+			callbacks=callbacks
                         )
 ''' save model structure '''
 model_json = m.to_json()

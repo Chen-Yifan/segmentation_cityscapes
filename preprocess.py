@@ -8,9 +8,9 @@ from PIL import Image
 import imageio
 
 def merge_cities():
-    directories = ['leftImg8bit']
-    BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/"
-    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/png/"
+    directories = ['train','val','test']
+    BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/leftImg8bit"
+    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/png/leftImg8bit"
     for d in directories:
         cities = os.path.join(BASE_PATH, d)
         save_dir = os.path.join(NEW_PATH, d)
@@ -21,6 +21,7 @@ def merge_cities():
             for file in files:
                 src = os.path.join(cur_path, file)
                 dst = os.path.join(save_dir, file)
+                print(src)
                 copyfile(src, dst)
 
 
@@ -108,4 +109,4 @@ def argmax_20cl():
 if __name__ == '__main__': 
       
     # Calling main() function 
-    png2npy() 
+    merge_cities() 
