@@ -113,17 +113,17 @@ m.save(os.path.join(args.ckpt_path,'model.h5'))
 
 '''Evaluate and Test '''
 print('======Start Evaluating======')
-test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', BATCH_SIZE, args.epochs, (1024,2048))
+# test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', BATCH_SIZE, args.epochs, (1024,2048))
 
-score = m.evaluate_generatro(test_generator, steps=num_test)
+score = m.evaluate_generator(val_generator, steps=num_val)
 print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
     file.write("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
-print('======Start Testing======')
-predict_y = m.predict_generator(test_generator, steps=num_test)
+# print('======Start Testing======')
+# predict_y = m.predict_generator(test_generator, steps=num_test)
 
 #save image
 # print('======Save Results======')
