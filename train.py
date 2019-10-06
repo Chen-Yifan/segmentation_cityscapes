@@ -99,8 +99,15 @@ callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 #                           shuffle = True,
 #                           callbacks=callbacks)
 from newGen import dataGen
-history = trainGen(BATCH_SIZE, args.epoch, 256 )
-
+train_generator,val_generator,num_train,num_val = dataGen(BATCH_SIZE, args.epochs, 256 )
+history = m.fit_generator(
+                        train_generator,
+                        steps_per_epoch = num_train/BATCH_SIZE,
+                        validation_data=val_generator,
+                        validation_steps =num_val/BATCH_SIZE,
+                        epochs=args.epochs,
+                        verbose=1
+                        )
 ''' save model structure '''
 model_json = m.to_json()
 with open(os.path.join(args.ckpt_path,"model.json"), "w") as json_file:

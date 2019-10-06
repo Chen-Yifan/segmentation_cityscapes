@@ -1,4 +1,5 @@
 from keras.preprocessing.image import ImageDataGenerator
+import os
 
 def dataGen(batch_size=16, epochs=1, shape=256):
     # Training path
@@ -38,7 +39,7 @@ def dataGen(batch_size=16, epochs=1, shape=256):
     mask_datagen = ImageDataGenerator(**y_gen_args)
 
     seed = 1 # the same seed is applied to both image_ and mask_generator
-    image_generator = image_datagen.flow_from_directory(
+    image_generator = img_datagen.flow_from_directory(
         X_path,
         target_size=(h, w),
         batch_size=batch_size,
@@ -83,15 +84,5 @@ def dataGen(batch_size=16, epochs=1, shape=256):
 
     val_generator = zip(image_generator, mask_generator)
     num_val = len(image_generator)
-
-    # fit the generators
-    history = model.fit_generator(
-                        train_generator,
-                        steps_per_epoch = num_train/batch_size, 
-                        validation_data=val_generator,
-                        validation_steps =num_val/batch_size,
-                        epochs=epochs,
-                        verbose=1
-                        )
-
-    return history
+    
+    return train_generator,val_generator, num_train, num_val
