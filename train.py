@@ -13,6 +13,8 @@ import os
 import argparse
 from model import *
 from newGen import *
+from keras.utils import multi_gpu_model
+
 
 def get_callbacks(name_weights, path, patience_lr, opt=1):
     mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
@@ -38,6 +40,7 @@ parser.add_argument("--opt", type=int, default=1)
 parser.add_argument("--n_classes", type=int, default=34)
 parser.add_argument("--h", type=int, default=1024)
 parser.add_argument("--w", type=int, default=2048)
+parser.add_argument("--gpus", type=int, default=1)
 
 args = parser.parse_args()
 
@@ -53,6 +56,8 @@ mask_path = os.path.join(args.dataset_path,'gtFine')
 cl = args.n_classes
 h = args.h
 w = args.w
+gpus = args.gpus
+
 '''define model
     
     Unet:  from segmentation_models
@@ -61,7 +66,6 @@ w = args.w
 '''
 input_shape = (h,w,3)
 if (args.network == 'Unet'):
-
     m = Unet(classes = cl, input_shape=input_shape, activation='softmax')
 #     m = get_unet()
 elif (args.network == 'unet_noskip'):
@@ -69,19 +73,6 @@ elif (args.network == 'unet_noskip'):
 else:
     m = Unet('resnet18', classes=cl, input_shape=input_shape, activation='softmax')
 m.summary()
-    
-'''Load data'''
-# train_x, train_y, val_x, val_y= load_data(frame_path, mask_path, 256, cl)
-# print('train_y.shape:',train_y.shape)
-# # val_y = np.eye(cl)[val_y]
-
-# NO_OF_TRAINING_IMAGES = train_x.shape[0]
-# NO_OF_VAL_IMAGES = val_x.shape[0]
-# print('train: val: test', NO_OF_TRAINING_IMAGES, NO_OF_VAL_IMAGES)
-
-'''Data generator'''
-#DATA AUGMENTATION
-
 
 #optimizer
 if args.opt==1:
@@ -91,17 +82,14 @@ elif args.opt==2:
 else:
     opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
     
+if (gpus >1 ):
+    m = multi_gpu_model(m, gpus=gpus)
+
 m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score])
 
 # fit model
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'
 callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
-
-# history = m.fit_generator(train_gen, epochs=args.epochs,
-#                           steps_per_epoch = (NO_OF_TRAINING_IMAGES//BATCH_SIZE),
-#                           validation_data=(val_x/255, val_y),
-#                           shuffle = True,
-#                           callbacks=callbacks)
 
 train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, args.epochs, (1024,2048))
 val_generator,num_val = val_dataGen(frame_path, mask_path, 'val', BATCH_SIZE, args.epochs, (1024,2048))
