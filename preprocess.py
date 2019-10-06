@@ -7,7 +7,23 @@ import scipy.misc
 from PIL import Image
 import imageio
 
-  
+def merge_cities():
+    directories = ['leftImg8bit']
+    BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/"
+    NEW_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/png/"
+    for d in directories:
+        cities = os.path.join(BASE_PATH, d)
+        save_dir = os.path.join(NEW_PATH, d)
+        mkdir(save_dir)
+        for split in os.listdir(cities):
+            cur_path = os.path.join(cities, split)
+            files = os.listdir(cur_path)
+            for file in files:
+                src = os.path.join(cur_path, file)
+                dst = os.path.join(save_dir, file)
+                copyfile(src, dst)
+
+
 # Function to rename multiple files 
 def clean_gtFine_tolabel(shape=256, cl=20): 
     '''delete non label files in gtFine'''
