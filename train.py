@@ -85,11 +85,12 @@ else:
 
 # Not needed to change the device scope for model definition:
 if(gpus>1):
-    m = multi_gpu_model(m, gpus=2)
-    print("Training using multiple GPUs..")
-#except:
-#    parallel_model = m
-#    print("Training using single GPU or CPU..")    
+    try:
+        m = multi_gpu_model(m, gpus=2)
+        print("Training using multiple GPUs..")
+    except:
+        parallel_model = m
+        print("Training using single GPU or CPU..")    
 
 #gpu_list = ["gpu(%d)" % i for i in range(gpus)]
 m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score])
