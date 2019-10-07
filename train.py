@@ -15,6 +15,7 @@ from model import *
 from newGen import *
 from keras.utils import multi_gpu_model
 
+gpu_list = tf.keras.backend.get_session().list_devices()
 
 def get_callbacks(name_weights, path, patience_lr, opt=1):
     mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
@@ -58,6 +59,7 @@ h = args.h
 w = args.w
 gpus = args.gpus
 
+
 '''define model
     
     Unet:  from segmentation_models
@@ -83,9 +85,11 @@ else:
     opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
     
 if (gpus >1 ):
-    m = multi_gpu_model(m, gpus=gpus)
+   # m = multi_gpu_model(m, gpus=gpus)
+    m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score], context=gpu_list[1:3])
 
-m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score])
+else:
+    m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score])
 
 # fit model
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'

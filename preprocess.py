@@ -26,11 +26,11 @@ def merge_cities():
 
 
 # Function to rename multiple files 
-def clean_gtFine_tolabel(shape=256, cl=20): 
+def clean_gtFine_tolabel(): 
     '''delete non label files in gtFine'''
-    directories = ['gtFine','leftImg8bit']
+    directories = ['gtFine']
     splits = ['train','val','test']
-    BASE_PATH = "/home/yifan/Github/segmentation_train/dataset/cityscapes_orig/"
+    BASE_PATH = "/home/yifan/Github/segmentation_cityscapes/dataset/"
     
     for d in directories:
         for split in splits:
@@ -45,7 +45,6 @@ def clean_gtFine_tolabel(shape=256, cl=20):
 #                     print(file)
                     src = os.path.join(ciy_dir, file)
                     
-                    # labelId to trainId and resize, save to file[:-12]+'trainIds.npy')
                     if(file[-12:] != 'labelIds.png'):
                         print('not',file)
                         os.remove(src)
@@ -108,5 +107,5 @@ def argmax_20cl():
 # Driver Code 
 if __name__ == '__main__': 
       
-    # Calling main() function 
-    merge_cities() 
+    clean_gtFine_tolabel()    
+# Calling main() function 
