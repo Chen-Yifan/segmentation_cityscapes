@@ -30,7 +30,7 @@ def clean_gtFine_tolabel():
     '''delete non label files in gtFine'''
     directories = ['gtFine']
     splits = ['train','val','test']
-    BASE_PATH = "/home/yifan/Github/segmentation_cityscapes/dataset/"
+    BASE_PATH = "/home/yifanc3/Github/segmentation_train/dataset/"
     
     for d in directories:
         for split in splits:

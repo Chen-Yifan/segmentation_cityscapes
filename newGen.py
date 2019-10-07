@@ -78,6 +78,7 @@ def val_dataGen(frame_path, mask_path, split, batch_size=1, epochs=1, shape=(102
         target_size=(h, w),
         batch_size=batch_size,
         class_mode=None,
+        interpolation='nearest',
         shuffle = False, # we dont need to shuffle validation set
         seed=seed)
 

@@ -89,7 +89,6 @@ if(gpus>1):
         m = multi_gpu_model(m, gpus=2)
         print("Training using multiple GPUs..")
     except:
-        parallel_model = m
         print("Training using single GPU or CPU..")    
 
 #gpu_list = ["gpu(%d)" % i for i in range(gpus)]

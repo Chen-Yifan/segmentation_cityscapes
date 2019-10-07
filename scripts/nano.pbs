@@ -1,0 +1,11 @@
+#!/bin/bash 
+#PBS -k o 
+#PBS -l nodes=nano5:ppn=2:gpus=2
+#PBS -l walltime=08:00:00
+#PBS -M yifanc3@illinois.edu
+#PBS -m abe 
+#PBS -N cityscapes
+source activate tf3.6-v2
+cd /home/yifanc3/Github/segmentation_train
+./scripts/train_nano.sh
+

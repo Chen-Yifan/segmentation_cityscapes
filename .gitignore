@@ -2,6 +2,7 @@ dataset/
 dataset*
 __pycache__/
 preprocess.pbs
-models/
+checkpoints/
+results/
 *pyc
 .ipynb_checkpoints/
