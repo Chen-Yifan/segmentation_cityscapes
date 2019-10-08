@@ -5,4 +5,6 @@ preprocess.pbs
 checkpoints/
 results/
 *pyc
+*err
+*out
 .ipynb_checkpoints/
