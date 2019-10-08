@@ -3,8 +3,6 @@ import os
 
 def dataGen(frame_path, mask_path, batch_size=1, epochs=1, shape=(1024,2048)):
     # Training path
-    # frame_path = '/home/yifan/Github/segmentation_train/dataset/leftImg8bit'
-    # mask_path = '/home/yifan/Github/segmentation_train/dataset/gtFine'
     X_path= os.path.join(frame_path, 'train') # input image
     Y_path = os.path.join(mask_path, 'train') # ground-truth label
 
@@ -13,24 +11,28 @@ def dataGen(frame_path, mask_path, batch_size=1, epochs=1, shape=(1024,2048)):
 
     # Train data generator
     x_gen_args = dict(
-                    rescale = 1./255,
-                    rotation_range=0.2,
-                    width_shift_range=0.05,
-                    height_shift_range=0.05,
-                    shear_range=0.05,
-                    zoom_range=0.05,
-                    horizontal_flip=True,
-                    fill_mode='nearest')
-
+                        rescale=1./255,
+                        #featurewise_center=True,
+                        #featurewise_std_normalization=True,
+                        #shear_range=0.2,
+                        #zoom_range=0.5,
+                        #channel_shift_range=?,
+                        #width_shift_range=0.5,
+                        #height_shift_range=0.5,
+                        rotation_range = 10,
+                        horizontal_flip=True
+                    )
     y_gen_args = dict(
-                    rotation_range=0.2,
-                    width_shift_range=0.05,
-                    height_shift_range=0.05,
-                    shear_range=0.05,
-                    zoom_range=0.05,
-                    horizontal_flip=True,
-                    fill_mode='nearest')
-
+                        #featurewise_center=True,
+                        #featurewise_std_normalization=True,
+                        #shear_range=0.2,
+                        #zoom_range=0.5,
+                        #channel_shift_range=?,
+                        #width_shift_range=0.5,
+                        #height_shift_range=0.5,
+                        rotation_range = 10,
+                        horizontal_flip=True
+                    )
     img_datagen = ImageDataGenerator(**x_gen_args)
     mask_datagen = ImageDataGenerator(**y_gen_args)
 
@@ -41,7 +43,7 @@ def dataGen(frame_path, mask_path, batch_size=1, epochs=1, shape=(1024,2048)):
         batch_size=batch_size,
         shuffle = True, # shuffle the training data
         class_mode=None, # set to None, in this case
-        interpolation='nearest',
+        interpolation='bilinear',
         seed=seed)
 
     mask_generator = mask_datagen.flow_from_directory(
@@ -51,7 +53,7 @@ def dataGen(frame_path, mask_path, batch_size=1, epochs=1, shape=(1024,2048)):
         batch_size=batch_size,
         shuffle = True,
         class_mode=None,
-        interpolation='bilinear',
+        interpolation='nearest',
         seed=seed)
     
     # combine image_ and mask_generator into one
@@ -78,7 +80,7 @@ def val_dataGen(frame_path, mask_path, split, batch_size=1, epochs=1, shape=(102
         target_size=(h, w),
         batch_size=batch_size,
         class_mode=None,
-        interpolation='nearest',
+        interpolation='bilinear',
         shuffle = False, # we dont need to shuffle validation set
         seed=seed)
 
@@ -89,7 +91,7 @@ def val_dataGen(frame_path, mask_path, split, batch_size=1, epochs=1, shape=(102
         batch_size=batch_size,
         shuffle = False,
         class_mode=None,
-        interpolation='bilinear',
+        interpolation='nearest',
         seed=seed)
 
     val_generator = zip(image_generator, mask_generator)

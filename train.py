@@ -86,7 +86,7 @@ else:
 # Not needed to change the device scope for model definition:
 if(gpus>1):
     try:
-        m = multi_gpu_model(m, gpus=2)
+        m = multi_gpu_model(m, gpus=gpus)
         print("Training using multiple GPUs..")
     except:
         print("Training using single GPU or CPU..")    
