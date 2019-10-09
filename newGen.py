@@ -11,28 +11,24 @@ def dataGen(frame_path, mask_path, batch_size=1, epochs=1, shape=(1024,2048)):
 
     # Train data generator
     x_gen_args = dict(
-                        rescale=1./255,
-                        #featurewise_center=True,
-                        #featurewise_std_normalization=True,
-                        #shear_range=0.2,
-                        #zoom_range=0.5,
-                        #channel_shift_range=?,
-                        #width_shift_range=0.5,
-                        #height_shift_range=0.5,
-                        rotation_range = 10,
-                        horizontal_flip=True
-                    )
+                    rescale = 1./255,
+                    rotation_range=0.2,
+                    width_shift_range=0.05,
+                    height_shift_range=0.05,
+                    shear_range=0.05,
+                    zoom_range=0.05,
+                    horizontal_flip=True,
+                    fill_mode='wrap')
+
     y_gen_args = dict(
-                        #featurewise_center=True,
-                        #featurewise_std_normalization=True,
-                        #shear_range=0.2,
-                        #zoom_range=0.5,
-                        #channel_shift_range=?,
-                        #width_shift_range=0.5,
-                        #height_shift_range=0.5,
-                        rotation_range = 10,
-                        horizontal_flip=True
-                    )
+                    rotation_range=0.2,
+                    width_shift_range=0.05,
+                    height_shift_range=0.05,
+                    shear_range=0.05,
+                    zoom_range=0.05,
+                    horizontal_flip=True,
+                    fill_mode='wrap')
+
     img_datagen = ImageDataGenerator(**x_gen_args)
     mask_datagen = ImageDataGenerator(**y_gen_args)
 
