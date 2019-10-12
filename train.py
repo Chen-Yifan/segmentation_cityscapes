@@ -99,8 +99,8 @@ m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_sc
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'
 callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 
-train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, args.epochs, (1024,2048))
-val_generator,num_val = val_dataGen(frame_path, mask_path, 'val', BATCH_SIZE, args.epochs, (1024,2048))
+train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, args.epochs, (h,w))
+val_generator,num_val = val_dataGen(frame_path, mask_path, 'val', BATCH_SIZE, args.epochs, (h,w))
 history = m.fit_generator(
                         train_generator,
                         steps_per_epoch = num_train,
