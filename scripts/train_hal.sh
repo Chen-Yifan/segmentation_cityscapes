@@ -5,6 +5,6 @@ python train.py \
 --network Unet \
 --epochs 100 \
 --n_classes 34 \
---batch_size  \
+--batch_size 4 \
 --opt 0 \
 --gpus 3
