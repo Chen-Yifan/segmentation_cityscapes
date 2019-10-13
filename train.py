@@ -1,7 +1,6 @@
 from segmentation_models import Unet
 # from segmentation_models.backbones import get_preprocessing
 from segmentation_models.losses import bce_jaccard_loss
-from segmentation_models.metrics import iou_score
 from keras.optimizers import SGD,Adam,Adadelta
 from keras.callbacks import TensorBoard
 from keras.callbacks import ModelCheckpoint
@@ -66,7 +65,7 @@ gpus = args.gpus
 '''
 input_shape = (h,w,3)
 if (args.network == 'Unet'):
-    m = Unet(classes = cl, input_shape=input_shape, activation=None)
+    m = Unet(classes = cl, input_shape=input_shape, activation='softmax')
 #     m = get_unet()
 elif (args.network == 'unet_noskip'):
     m = unet_noskip()
@@ -89,19 +88,18 @@ if(gpus>1):
         m = multi_gpu_model(m, gpus=gpus)
         print("Training using multiple GPUs..")
     except:
-        print("Training using single GPU or CPU..")    
+        print("Training using single GPU or CPU..")
 
-# def sparse_softmax_cce(y_true, y_pred):
-#     y_true = y_true[:,:,:,0]
-#     y_true = tf.cast(y_true, 'int32')
-#     print(y_true.get_shape())
-#     return tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+def sparse_softmax_cce(y_true, y_pred):
+    y_true = K.squeeze(y_true, axis=-1)
+    y_true = tf.cast(y_true, 'int32')
+    print(y_true.get_shape())
+    return tf.keras.backend.sparse_categorical_crossentropy(y_true,y_pred)
 
-m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score])
-
+m.compile(optimizer=opt, loss=sparse_softmax_cce, metrics=[meaniou])
 
 # fit model
-weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_iou_score:.2f}.hdf5'
+weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_meaniou:.2f}.hdf5'
 callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 
 train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, args.epochs, (h,w))
