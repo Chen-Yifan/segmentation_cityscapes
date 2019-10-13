@@ -7,4 +7,5 @@ results/
 *pyc
 *err
 *out
+city*
 .ipynb_checkpoints/

@@ -66,7 +66,7 @@ gpus = args.gpus
 '''
 input_shape = (h,w,3)
 if (args.network == 'Unet'):
-    m = Unet(classes = cl, input_shape=input_shape, activation='softmax')
+    m = Unet(classes = cl, input_shape=input_shape, activation=None)
 #     m = get_unet()
 elif (args.network == 'unet_noskip'):
     m = unet_noskip()
@@ -91,7 +91,12 @@ if(gpus>1):
     except:
         print("Training using single GPU or CPU..")    
 
-#gpu_list = ["gpu(%d)" % i for i in range(gpus)]
+# def sparse_softmax_cce(y_true, y_pred):
+#     y_true = y_true[:,:,:,0]
+#     y_true = tf.cast(y_true, 'int32')
+#     print(y_true.get_shape())
+#     return tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+
 m.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=[iou_score])
 
 
@@ -108,7 +113,7 @@ history = m.fit_generator(
                         validation_steps =num_val,
                         epochs=args.epochs,
                         verbose=1,
-			            callbacks=callbacks
+                        callbacks=callbacks
                         )
 
 ''' save model structure '''
