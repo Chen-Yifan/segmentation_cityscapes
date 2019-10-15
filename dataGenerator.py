@@ -42,36 +42,73 @@ def load_data(frame_path, mask_path, shape=256, cl=34):
 
     return train_x, train_y, val_x, val_y
 
-def xy_formarray(mask_path, frame_path, split, shape=256, cl=34):
-    
+
+def xy_formarray(mask_path, frame_path, split, recursive=True, shape=256, name_list=False):
+    '''
+        from png to npy array with reshape = shapexshape
+    '''
     mask_path = os.path.join(mask_path, split)
     frame_path = os.path.join(frame_path, split)
-    
-    mask_files = os.listdir(mask_path)
-    frame_files = os.listdir(frame_path)
-    
-    #sort
-    frame_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
-                               for x in re.findall(r'[^0-9]|[0-9]+', var)])
-    mask_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
-                               for x in re.findall(r'[^0-9]|[0-9]+', var)])
-    
-    # binary encode
-    num_files = len(mask_files)
-    print(len(mask_files), len(frame_files))
-    
-    x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
-    y = np.zeros((num_files, shape, shape, cl)).astype(np.uint8)
-    
-    for i in range(num_files):
-#         print(i)
-        img = np.load(os.path.join(frame_path, frame_files[i]))
-        mask = np.load(os.path.join(mask_path, mask_files[i]))# (256,256) 
-        mask = np.eye(cl)[mask]
-        
-        x[i] = img
-        y[i] = mask
-    return x,y
+    frame_names = []
+    if(recursive):
+        x = []
+        y = []
+        cities = os.listdir(mask_path)
+        # recursively load the png files
+        for city in cities:
+            print(city)
+            mask_file = os.path.join(mask_path, city)
+            frame_file = os.path.join(frame_path, city)
+            frames = os.listdir(frame_file)
+            masks = os.listdir(mask_file)
+            frame_names = frame_names + frames
+            for frame in frames:
+                mask = frame.replace('leftImg8bit','gtFine_labelIds')
+                frame_src = os.path.join(frame_file, frame)
+                im = np.array(Image.open(frame_src))
+                img = scipy.misc.imresize(im, (shape,shape),interp='bilinear')
+                x.append(img)
+                
+                if(split == 'val'): 
+                    mask_src = os.path.join(mask_file, mask)
+                    im = np.array(Image.open(mask_src))
+                    mask = scipy.misc.imresize(im, (shape,shape),interp='nearest')    
+                    y.append(mask)
+        if(name_list):
+            print(len(frame_names), frame_names[0])
+            return np.array(x),np.array(y),frame_names
+        return np.array(x),np.array(y)
+            
+    else: # if not recursive
+        frame_files = os.listdir(frame_path)
+        mask_files = os.listdir(mask_path)
+        #sort
+        frame_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                                   for x in re.findall(r'[^0-9]|[0-9]+', var)])
+        mask_files.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                                   for x in re.findall(r'[^0-9]|[0-9]+', var)])
+
+        # binary encode
+        num_files = len(mask_files)
+        print(len(mask_files), len(frame_files))
+
+        x = np.zeros((num_files, shape, shape, 3)).astype(np.float32)
+        y = np.zeros((num_files, shape, shape)).astype(np.uint8)
+
+        for i in range(num_files):
+    #         img = np.load(os.path.join(frame_path, frame_files[i]))
+    #         mask = np.load(os.path.join(mask_path, mask_files[i]))# (256,256)
+            frame_src = os.path.join(frame_path, frame_files[i])
+            im = np.array(Image.open(frame_src))
+            img = scipy.misc.imresize(im, (shape,shape),interp='bilinear')
+
+            mask_src = os.path.join(mask_path, mask_files[i])
+            im = np.array(Image.open(mask_src))
+            mask = scipy.misc.imresize(im, (shape,shape),interp='nearest')        
+
+            x[i] = img
+            y[i] = mask
+        return x,y
          
 
 def trainGen(train_x, train_y, batch_size, cl=34):
@@ -133,29 +170,35 @@ def testGen(val_x, val_y, batch_size):
     return val_gen
 
 
-def save_results(mask_path, result_dir, test_x, test_y, predict_y, split='test'):
-    test_mask_path = os.path.join(mask_path,split)
-    files = os.listdir(test_mask_path) # maintains the filename
+def save_results(files, result_dir, test_x, test_y, predict_y, split='test'):
     
     # map back to 0-33
-    test_y = np.argmax(test_y, axis=-1)
+    if(test_y.ndim > 2):
+        test_y = np.argmax(test_y, axis=-1)
     predict_y = np.argmax(predict_y, axis=-1).astype(np.uint8)
     
     for i in range(len(files)):
         # 256,256,1 -- id --> change to color
-        label_gt = test_y[i]
-        color_gt = palette(label_gt)
-        label_pred = predict_y[i]
+        file_name = files[i][:-15]
+        print(file_name)
+        
+        if(split != 'test'):
+            label_gt = test_y[i]
+            color_gt = palette(label_gt)
+            imageio.imwrite(os.path.join(result_dir, file_name + 'B_color_gt.jpg'), color_gt.astype('uint8'))
+            label_gt = scipy.misc.imresize(label_gt, (1024,2048),interp='nearest')
+            np.save(os.path.join(result_dir, file_name + 'B_label_gt.npy'), label_gt)
+            
+        # if no test_y (gt) here
+        label_pred = predict_y[i].astype('uint8')
         color_pred = palette(label_pred)
-        
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_A.jpg'), test_x[i].astype('uint8'))
-        imageio.imwrite(os.path.join(result_dir, files[i][:-20] + '_B_color_gt.jpg'), color_gt.astype('uint8'))
-        imageio.imwrite(os.path.join(result_dir,files[i][:-20] + '_B_color_pred.jpg'), color_pred.astype('uint8'))
-        
-        label_gt = scipy.misc.imresize(label_gt, (1024,2048),interp='nearest')
         label_pred = scipy.misc.imresize(label_pred, (1024,2048),interp='nearest')
-        np.save(os.path.join(result_dir, files[i][:-20] + '_B_label_gt.npy'), label_gt)
-        np.save(os.path.join(result_dir,files[i][:-20] + '_B_label_pred.npy'), label_pred)
+        image = test_x[i]
+        imageio.imwrite(os.path.join(result_dir, file_name + 'A.png'), image)
+        imageio.imwrite(os.path.join(result_dir, file_name + 'B_labelId_pred.png'), label_pred)
+        imageio.imwrite(os.path.join(result_dir, file_name + 'B_color_pred.png'), color_pred)
+        
+        
         
 
     

@@ -14,26 +14,36 @@ from keras.optimizers import SGD,Adam,Adadelta
 from dataGenerator import *
 from keras.models import model_from_json
 import argparse
+from metrics import *
 
 #get arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_path", type=str, default='/home/yifan/Github/segmentation_train/dataset/cityscapes_all')
 parser.add_argument("--ckpt_path", type=str, default='/media/exfat/yifan/rf_checkpoints/cityscapes_unet_100e/')
 parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_results/cityscapes_unet_100e/')
-parser.add_argument("--weights", type=str)
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
 parser.add_argument("--opt", type=int, default=1)  
-parser.add_argument("--split", type=str, default='test')  
+parser.add_argument("--split", type=str, default='test')
 args = parser.parse_args()
 
 
 BATCH_SIZE = args.batch_size
-frame_path = os.path.join(args.dataset_path,'left_256')
-mask_path = os.path.join(args.dataset_path,'gtFine_256')
-test_x, test_y = xy_array(mask_path, frame_path, args.split)
+frame_path = os.path.join(args.dataset_path,'leftImg8bit')
+mask_path = os.path.join(args.dataset_path,'gtFine')
+test_x, test_y, test_files = xy_formarray(mask_path, frame_path, args.split, True, 256, True)
+print(test_x.shape)
+assert(len(test_files)==len(test_x))
+print(test_files[0])
 
-Model_dir = os.path.join(args.ckpt_path,args.weights)
+#9-11 the epoch
+weights = os.listdir(args.ckpt_path)
+weight = None
+for i in weights: 
+    if i[8:10] == str(args.epochs):
+        weight = i
+print(weight)
+Model_dir = os.path.join(args.ckpt_path,weight)
 
 #model 
 json_path = os.path.join(args.ckpt_path,'model.json')
@@ -50,26 +60,29 @@ elif args.opt==2:
     opt = SGD(lr=0.01, decay=1e-6, momentum=0.99, nesterov=True)
 else:
     opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
-m.compile(optimizer=opt, loss='categorical_crossentropy', metrics=[iou_score])
 
+def sparse_softmax_cce(y_true, y_pred):
+    y_true = K.squeeze(y_true, axis=-1)
+    y_true = tf.cast(y_true, 'int32')
+    print(y_true.get_shape())
+    return tf.keras.backend.sparse_categorical_crossentropy(y_true,y_pred)
 
-score = m.evaluate(test_x/255, test_y, verbose=0)
-# NO_OF_TEST_IMAGES = test_x.shape[0]
-# test_gen = testGen(test_x/255, test_y, BATCH_SIZE)
-# score = m.evaluate_generator(test_gen, steps=(NO_OF_TEST_IMAGES//BATCH_SIZE), verbose=0)
+m.compile(optimizer=opt, loss=sparse_softmax_cce, metrics=[meaniou])
 
-print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
-print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
-with open(os.path.join(args.ckpt_path,'output%s.txt'% args.weights[8:10]), "w") as file:
-    file.write("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
-    file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
+if (args.split=='val'):
+    score = m.evaluate(test_x/255, test_y, verbose=0)
+    print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
+    print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
+    with open(os.path.join(args.ckpt_path,'output%s.txt'% args.epochs), "w") as file:
+        file.write("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
+        file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
 predict_y = m.predict(test_x/255)
 # predict_y = m.predict_generator(test_gen, steps=(NO_OF_TEST_IMAGES//BATCH_SIZE), verbose=0)
 
-result_path = args.results_path + args.weights[0:-5]+'-iou%.2f-results_%s'%(score[1]*100, args.split)
+result_path = args.results_path +'weights.%s-results-%s'%(args.epochs, args.split)
 print(result_path)
 mkdir(result_path)
 
 #save image
-save_results(mask_path, result_path, test_x, test_y, predict_y, split=args.split)
+save_results(test_files, result_path, test_x, test_y, predict_y, split=args.split)
