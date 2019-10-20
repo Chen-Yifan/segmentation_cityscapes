@@ -1,10 +1,12 @@
 python train.py \
 --dataset ./dataset/ \
---ckpt_path ./checkpoints/cityscapes_unet_1024_Adam_100e/ \
---results_path ./results/cityscapes_unet_1024_Adam_100e/ \
+--ckpt_path ./checkpoints/cityscapes_unet_SGD_randomcrop_100e/ \
+--results_path ./results/cityscapes_unet_SGD_randomcrop_100e/ \
 --network Unet \
 --epochs 100 \
 --n_classes 34 \
---batch_size 4 \
---opt 0 \
+--batch_size 12 \
+--h 512 \
+--w 1024 \
+--opt SGD \
 --gpus 3

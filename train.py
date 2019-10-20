@@ -15,13 +15,13 @@ from newGen import *
 from keras.utils import multi_gpu_model
 import keras
 
-def get_callbacks(name_weights, path, patience_lr, opt=1):
-    mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='iou_score', mode='max')
-    reduce_lr_loss = ReduceLROnPlateau(factor=0.5)
+def get_callbacks(name_weights, path, patience_lr, opt='SGD'):
+    mcp_save = ModelCheckpoint(name_weights, save_best_only=False, monitor='val_loss', mode='min')
+    reduce_lr_loss = ReduceLROnPlateau(factor=0.9)
     logdir = os.path.join(path,'log')
     tensorboard = TensorBoard(log_dir=logdir, histogram_freq=0,
                                 write_graph=True, write_images=True)
-    if (opt == 3):
+    if (opt == 'Adadelta'):
         return [mcp_save, tensorboard]
         
     else:
@@ -35,7 +35,7 @@ parser.add_argument("--results_path", type=str, default='/media/exfat/yifan/rf_r
 parser.add_argument("--network", type=str, default='Unet')
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=100)
-parser.add_argument("--opt", type=int, default=1)
+parser.add_argument("--opt", type=str, default='SGD')
 parser.add_argument("--n_classes", type=int, default=34)
 parser.add_argument("--h", type=int, default=1024)
 parser.add_argument("--w", type=int, default=2048)
@@ -74,10 +74,10 @@ else:
 m.summary()
 
 #optimizer
-if args.opt==1:
+if args.opt=='Adam':
     opt= Adam(lr = 1e-4)
-elif args.opt==2:
-    opt = SGD(lr=0.01, decay=1e-6, momentum=0.99, nesterov=True)
+elif args.opt=='SGD':
+    opt = SGD(lr=0.01, decay=5e-4, momentum=0.90)
 else:
     opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
 
@@ -103,7 +103,7 @@ weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_meaniou
 callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 
 train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, args.epochs, (h,w))
-val_generator,num_val = val_dataGen(frame_path, mask_path, 'val', BATCH_SIZE, args.epochs, (h,w))
+val_generator,num_val = val_dataGen(frame_path, mask_path, 'val', 1, args.epochs, (h,w))
 history = m.fit_generator(
                         train_generator,
                         steps_per_epoch = num_train,
@@ -124,7 +124,7 @@ m.save(os.path.join(args.ckpt_path,'model.h5'))
 
 '''Evaluate and Test '''
 print('======Start Evaluating======')
-# test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', BATCH_SIZE, args.epochs, (1024,2048))
+test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', 1, args.epochs, (h, w))
 
 score = m.evaluate_generator(val_generator, steps=num_val)
 print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
@@ -133,13 +133,15 @@ with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
     file.write("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
-# print('======Start Testing======')
-# predict_y = m.predict_generator(test_generator, steps=num_test)
+print('======Start Testing======')
+predict_y = m.predict_generator(test_generator, steps=num_test)
 
 #save image
-# print('======Save Results======')
-# mkdir(args.results_path)
-# save_results(mask_path, args.results_path, test_x, test_y, predict_y, 'test')
-
+print('======Save Results======')
+result_path = args.results_path +'weights.%s-results-%s'%(args.epochs, 'test')
+print(result_path)
+mkdir(result_path)
+#save image
+save_results(test_files, result_path, test_x, test_y, predict_y, split='test')
 
 

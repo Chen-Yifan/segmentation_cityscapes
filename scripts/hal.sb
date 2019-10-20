@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name='yifanDL'
-#SBATCH --output='city.%j.%N.out'
-#SBATCH --error='city.%j.%N.err'
-#SBATCH --partition=gpux3
+#SBATCH --output='cityscapes_unet_SGD_randomcrop_100e.%j.%N.out'
+#SBATCH --error='cityscapes_unet_SGD_randomcrop_100e.%j.%N.err'
+#SBATCH --partition=gpux4
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=48
 #SBATCH --gres=gpu:v100:4
