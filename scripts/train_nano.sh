@@ -5,7 +5,7 @@ python train.py \
 --network Unet \
 --epochs 100 \
 --n_classes 34 \
---batch_size 8 \
+--batch_size 12 \
 --opt SGD \
 --h 512 \
 --w 1024 \
