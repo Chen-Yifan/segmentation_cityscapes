@@ -37,8 +37,9 @@ def meaniou(y_true, y_pred):
     y_true is in (batch, h, w, 1), we need to cast it into 'int8' and reshape to (batch, h, w, cl)
     after the transformation, we calculate the meaniou
     '''
-    y_true = K.squeeze(y_true,axis=-1)  
-    y_true = K.cast(y_true, 'int32')
+    if(len(y_true.get_shape())==4):
+        y_true = K.squeeze(y_true,axis=-1)  
+    y_true = K.cast(y_true, 'uint8')
     cl = K.int_shape(y_pred)[-1] 
     y_true = K.one_hot( y_true, num_classes=cl)
     return iou_score(y_true, y_pred)

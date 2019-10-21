@@ -91,9 +91,9 @@ if(gpus>1):
         print("Training using single GPU or CPU..")
 
 def sparse_softmax_cce(y_true, y_pred):
-    y_true = K.squeeze(y_true, axis=-1)
-    y_true = tf.cast(y_true, 'int32')
-    print(y_true.get_shape())
+    if len(y_true.get_shape()) == 4:
+        y_true = K.squeeze(y_true, axis=-1)
+    y_true = tf.cast(y_true, 'uint8')
     return tf.keras.backend.sparse_categorical_crossentropy(y_true,y_pred)
 
 m.compile(optimizer=opt, loss=sparse_softmax_cce, metrics=[meaniou])

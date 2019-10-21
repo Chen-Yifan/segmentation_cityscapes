@@ -1,7 +1,7 @@
 python train.py \
 --dataset ./dataset/ \
---ckpt_path ./checkpoints/cityscapes_unet_SGD_randomcrop_100e/ \
---results_path ./results/cityscapes_unet_SGD_randomcrop_100e/ \
+--ckpt_path ./checkpoints/cityscapes_unet_SGD_randomcrop_100e_v2/ \
+--results_path ./results/cityscapes_unet_SGD_randomcrop_100e_v2/ \
 --network Unet \
 --epochs 100 \
 --n_classes 34 \
