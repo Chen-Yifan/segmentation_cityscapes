@@ -4,7 +4,7 @@
 #PBS -l walltime=30:00:00
 #PBS -M yifanc3@illinois.edu
 #PBS -m abe 
-#PBS -N cityscapes_unet_256_SGD_100e
+#PBS -N cityscapes_unet_SGD_randomcrop_100e
 source activate tf3.6-v2
 cd /home/yifanc3/Github/segmentation_train
 ./scripts/train_nano.sh

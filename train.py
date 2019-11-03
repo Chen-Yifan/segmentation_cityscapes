@@ -102,13 +102,14 @@ m.compile(optimizer=opt, loss=sparse_softmax_cce, metrics=[meaniou])
 weights_path = args.ckpt_path + 'weights.{epoch:02d}-{val_loss:.2f}-{val_meaniou:.2f}.hdf5'
 callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 
-train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, args.epochs, (h,w))
-val_generator,num_val = val_dataGen(frame_path, mask_path, 'val', 1, args.epochs, (h,w))
+#load train_val
+train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, (h,w))
+val_x, val_y = load_test(mask_path, frame_path, 'val', True, (h,w), False)
+
 history = m.fit_generator(
                         train_generator,
                         steps_per_epoch = num_train,
-                        validation_data=val_generator,
-                        validation_steps =num_val,
+                        validation_data=(val_x/255., val_y),
                         epochs=args.epochs,
                         verbose=1,
                         callbacks=callbacks
@@ -122,7 +123,8 @@ with open(os.path.join(args.ckpt_path,"model.json"), "w") as json_file:
 print("Saved model to disk")
 m.save(os.path.join(args.ckpt_path,'model.h5'))
 
-'''Evaluate and Test '''
+
+'''**********Evaluate and Test **********'''
 print('======Start Evaluating======')
 test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', 1, args.epochs, (h, w))
 
@@ -134,7 +136,8 @@ with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
     file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
 print('======Start Testing======')
-predict_y = m.predict_generator(test_generator, steps=num_test)
+test_x, test_y, test_files = load_test(mask_path, frame_path, 'test', True, (h,w), True)
+predict_y = m.predict(test_x/255)
 
 #save image
 print('======Save Results======')
@@ -143,5 +146,3 @@ print(result_path)
 mkdir(result_path)
 #save image
 save_results(test_files, result_path, test_x, test_y, predict_y, split='test')
-
-
