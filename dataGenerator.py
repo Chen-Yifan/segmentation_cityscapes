@@ -69,6 +69,7 @@ def load_test(mask_path, frame_path, split, recursive=True, shape=(512,1024), na
                     im = np.array(Image.open(mask_src))
                     mask = cv2.resize(im, None, fx=0.5,
                            fy=0.5, interpolation=cv2.INTER_NEAREST)  
+                    mask = np.expand_dims(mask,axis=-1)
                     y.append(mask)
                     
         if(name_list):
