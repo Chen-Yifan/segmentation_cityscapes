@@ -52,7 +52,7 @@ def zoom(image, label, crop_shape=(512,1024)):
     # random zoom
     zoom_factor = random.uniform(0.5,2)
     image = cv2.resize(image, None, fx=zoom_factor,
-                       fy=zoom_factor, interpolation=cv2.INTER_LINEAR)
+                       fy=zoom_factor, interpolation=cv2.INTER_LINEAR)/255.
     label = cv2.resize(label, None, fx=zoom_factor,
                        fy=zoom_factor, interpolation=cv2.INTER_NEAREST)
     #random crop
