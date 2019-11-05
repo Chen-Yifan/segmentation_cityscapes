@@ -1,11 +1,11 @@
 python train.py \
 --dataset ./dataset/ \
---ckpt_path ./checkpoints/cityscapes_unet_SGD_randomcrop_10e/ \
---results_path ./results/cityscapes_unet_SGD_randomcrop_10e/ \
+--ckpt_path ./checkpoints/cityscapes_unet_SGD_randomcrop_60e/ \
+--results_path ./results/cityscapes_unet_SGD_randomcrop_60e/ \
 --network Unet \
---epochs 10 \
+--epochs 60 \
 --n_classes 34 \
---batch_size 8 \
+--batch_size 12 \
 --opt SGD \
 --h 512 \
 --w 1024 \

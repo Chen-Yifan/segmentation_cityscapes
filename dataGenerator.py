@@ -73,8 +73,7 @@ def load_test(mask_path, frame_path, split, recursive=True, shape=(512,1024), na
                     y.append(mask)
                     
         if(name_list):
-            print(len(frame_names), frame_names[0])
-            return np.array(x), np.array(y), frame_names
+            return np.array(x).astype('float32'), np.array(y).astype('uint8'), frame_names
         return np.array(x), np.array(y)
 
 

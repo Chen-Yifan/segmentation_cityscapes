@@ -41,7 +41,7 @@ frame_path = os.path.join(args.dataset_path,'leftImg8bit')
 mask_path = os.path.join(args.dataset_path,'gtFine')
 
 test_x, test_y, test_files = load_test(mask_path, frame_path, args.split, True, (h,w), True)
-#print(test_x.shape)
+print(test_x.shape)
 #assert(len(test_files)==len(test_x))
 #print(test_files[0])
 
@@ -72,9 +72,11 @@ elif args.opt=='SGD':
 else:
     opt = Adadelta(lr=1, rho=0.95, epsilon=1e-08, decay=0.0)
 
-#m = multi_gpu_model(m, gpus=2)
-#print("Training using multiple GPUs..")
-        
+try:
+    m = multi_gpu_model(m, gpus=2)
+    print("Training using multiple GPUs..")
+except:
+    print("Training using single GPU...")        
 def sparse_softmax_cce(y_true, y_pred):
     y_true = K.squeeze(y_true, axis=-1)
     y_true = tf.cast(y_true, 'int32')
@@ -92,7 +94,7 @@ if (args.split=='val'):
         file.write("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 
 #test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', 1, (h, w))
-predict_y = m.predict(test_x/255)
+predict_y = m.predict(test_x/255, batch_size=2)
 #predict_y = m.predict_generator(test_generator, steps=num_test, verbose=0)
 
 result_path = args.results_path +'weights.%s-results-%s'%(args.epochs, args.split)

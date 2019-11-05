@@ -106,6 +106,14 @@ callbacks = get_callbacks(weights_path, args.ckpt_path, 5, args.opt)
 train_generator,num_train = dataGen(frame_path, mask_path, BATCH_SIZE, (h,w))
 val_x, val_y = load_test(mask_path, frame_path, 'val', True, (h,w), False)
 
+''' save model structure '''
+model_json = m.to_json()
+with open(os.path.join(args.ckpt_path,"model.json"), "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+print("Saved model to disk")
+m.save(os.path.join(args.ckpt_path,'model.h5'))
+
 history = m.fit_generator(
                         train_generator,
                         steps_per_epoch = num_train,
@@ -115,20 +123,9 @@ history = m.fit_generator(
                         callbacks=callbacks
                         )
 
-''' save model structure '''
-model_json = m.to_json()
-with open(os.path.join(args.ckpt_path,"model.json"), "w") as json_file:
-    json_file.write(model_json)
-# serialize weights to HDF5
-print("Saved model to disk")
-m.save(os.path.join(args.ckpt_path,'model.h5'))
-
-
 '''**********Evaluate and Test **********'''
 print('======Start Evaluating======')
-test_generator,num_test = val_dataGen(frame_path, mask_path, 'test', 1, args.epochs, (h, w))
-
-score = m.evaluate_generator(val_generator, steps=num_val)
+score = m.evaluate(val_x/255.,val_y)
 print("%s: %.2f%%" % (m.metrics_names[0], score[0]*100))
 print("%s: %.2f%%" % (m.metrics_names[1], score[1]*100))
 with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
@@ -137,7 +134,7 @@ with open(os.path.join(args.ckpt_path,'output.txt'), "w") as file:
 
 print('======Start Testing======')
 test_x, test_y, test_files = load_test(mask_path, frame_path, 'test', True, (h,w), True)
-predict_y = m.predict(test_x/255)
+predict_y = m.predict(test_x/255, batch_size=1)
 
 #save image
 print('======Save Results======')
